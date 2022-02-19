@@ -4,4 +4,4 @@
 
 * Normalised transcript counts as well as some metadata information by Seurat software and DEGs list are available in [Data](https://github.com/YandongZheng/scITDG/tree/main/Data).
 
-* The analysis results of the sample data are available in the [Result](https://github.com/YandongZheng/scITDG/tree/main/Analysis)
+* The analysis results of the sample data are available in the [Result](https://github.com/YandongZheng/scITDG/tree/main/Analysis).
