@@ -1,4 +1,4 @@
-# *scITDS* is an algorithm for identifying time-dependent genes in single-cell transcriptome sequencing data
+# *scITDG* is an algorithm for identifying time-dependent genes in single-cell transcriptome sequencing data
 
 * The scripts to reproduce the main figures that identifying time-dependent genes can be found in [Analysis](https://github.com/YandongZheng/scITDG/tree/main/Analysis).
 
