@@ -1,0 +1,749 @@
+'
+cd /data4/zhengyandong/12_scITDG/
+source activate R4.0
+R
+
+'
+
+
+code.wd <- "/data4/zhengyandong/12_scITDG/RPackage/scITDG/R/"
+source(paste0(code.wd, "AddTimePointData.R"))
+source(paste0(code.wd, "calFitModel.R"))
+source(paste0(code.wd, "calVurveApply.R"))
+source(paste0(code.wd, "CreateITDGObject.R"))
+source(paste0(code.wd, "estimateDispersionsForMatrix.R"))
+source(paste0(code.wd, "estimateSizeFactorsForMatrix.R"))
+source(paste0(code.wd, "getFitModel.R"))
+source(paste0(code.wd, "getGeneExpCur.R"))
+source(paste0(code.wd, "parametricDispersionFit.R"))
+source(paste0(code.wd, "responseMatrix.R"))
+source(paste0(code.wd, "disp_calc_helper_NB.R"))
+source(paste0(code.wd, "ScaleExpCur.R"))
+source(paste0(code.wd, "skmeansCut.R"))
+source(paste0(code.wd, "getClusterData.R"))
+source(paste0(code.wd, "getP2PDEGs.R"))
+source(paste0(code.wd, "Scanpy2Seurat.R"))
+
+#R中调用python
+library(reticulate)
+use_condaenv("/home/zhengyandong/anaconda3/envs/R4.0")
+use_python("/home/zhengyandong/anaconda3/envs/R4.0/bin/python", required = TRUE)
+py_config()
+#py_config()#安装的python版本环境查看，显示anaconda和numpy的详细信息。
+#py_available()#[1] TRUE  #检查您的系统是否安装过Python
+py_module_available("pandas")#检查“pandas”是否安装
+
+######加载python模块######
+scanpy <- import("scanpy")
+pandas <- import("pandas")
+
+library(Seurat)
+library(magrittr)
+library(VGAM)
+library(stringr)
+library(tibble)
+library(dplyr)
+library(BiocGenerics)
+library(Biobase)
+library(Matrix)
+
+
+
+work.wd <- "/data4/zhengyandong/12_scITDG/TabulaMurisSenis/"
+
+
+# 导入droplet数据
+tissue <- "Limb_Muscle"
+
+data.type <- "droplet" # droplet facs
+file.name <- paste0(work.wd, "h5ad.file/sub10000-tabula-muris-senis-", data.type,
+                    "-processed-official-annotations-", tissue, ".h5ad")
+
+#  40220 × 20138
+
+seurat.object.droplet <- Scanpy2Seurat(file.name = file.name, data.type = data.type)
+
+seurat.object.com <- merge(x = seurat.object.facs, y = seurat.object.droplet)
+
+seurat.object.com@meta.data$Group <- seurat.object.com@meta.data$age %>% as.vector
+order.list <- c("1m", "3m", "18m", "21m", "24m", "30m")
+seurat.object.com@meta.data$Group %<>% factor(levels = order.list)
+
+save.wd <- paste0(work.wd, "TissueAnalysis/", tissue, "/")
+dir.create(save.wd)
+saveRDS(seurat.object.com, paste0(save.wd, "TabulaMurisSenis_", tissue, "_Scanpy2Seurat_CombinedObject.rds"))
+
+seurat.object <- seurat.object.com
+
+
+load("F:/课题/scITDG/Package/scITDG/data_test/Tabula_Muris_Senis_processed_Limb_Muscle_10000.RData")
+
+usethis::use_data(Limb_Muscle_10000)
+
+
+order.list <- c("1m", "3m", "18m", "21m", "24m", "30m")
+
+seurat.object@meta.data$Group <- seurat.object@meta.data$age %>% as.vector
+
+
+seurat.object@meta.data$Group %<>% factor(levels = order.list)
+
+
+save.wd <- paste0(work.wd, "TissueAnalysis/", tissue, "_test/")
+dir.create(save.wd)
+
+# 依次计算任意两个时间点的DEGs
+deg.wd <- paste0(save.wd, "DEGs.list.negbinom/")
+dir.create(deg.wd)
+
+time.points <- order.list
+celltype.list <- seurat.object@meta.data$cell_ontology_class %>% as.vector %>% unique
+
+future::plan(strategy = 'multicore', workers = 20)
+
+p2pdeg.com <- do.call(rbind, lapply(X = celltype.list, FUN = function(celltype) {
+  getP2PDEGs(object = seurat.object, 
+             celltype.use = "cell_ontology_class", # celltype anno
+             celltype = celltype, 
+             time.points.use = "Group",
+             time.points = order.list)
+})) 
+
+p2pdeg.com %<>% .[!duplicated(.),]
+
+write.table (x, file ="", sep ="", row.names =TRUE, col.names =TRUE, quote =TRUE)
+
+
+write.table(p2pdeg.com, file = paste0(deg.wd, "All.celltype.P2PDEGs.txt"), sep = "\t", row.names = FALSE)
+
+save(p2pdeg.com, file = paste0(deg.wd, "All.celltype.RNA.P2PDEGs.negbinom.rdata"))
+
+
+# 
+deg.wd <- paste0(save.wd, "DEGs.list.negbinom/")
+dir.create(deg.wd)
+
+load(paste0(deg.wd, "All.celltype.RNA.P2PDEGs.negbinom.rdata"))
+p2pdeg.com$cell.type %<>% as.vector
+
+# 还是一种细胞类型一种细胞类型做吧
+p2p.deg.list <- p2pdeg.com %>% subset(abs(avg_log2FC) >= 0.5) %>% dplyr::select(gene, cell.type, class)
+
+
+sample.ncell.use = 200
+
+methods::setClass("scITDGDataSet",
+                  contains = "ExpressionSet",
+                  slots = c(expressionFamily = "vglmff", 
+                            lowerDetectionLimit = "numeric",
+                            dispFitInfo = "environment"),
+                  prototype = prototype(
+                    methods::new("VersionedBiobase",
+                                 versions = c(classVersion("ExpressionSet"),
+                                              scITDGDataSet = "1.2.0" )))
+)
+
+new.celltype.list <- NULL
+GeneExpCur.wd <- paste0(save.wd, "GeneExpCur/")
+dir.create(GeneExpCur.wd)
+
+for (cal.celltype in celltype.list) {
+  p2pdeg <- subset(p2p.deg.list, cell.type == cal.celltype) %>%
+    .$gene %>% as.vector %>% unique
+  
+  ITDGds.raw <- CreateITDGObject(object = seurat.object,
+                                 celltype.use = "cell_ontology_class", celltype = cal.celltype,
+                                 time.points.use = "Group", time.points = order.list,
+                                 random.value = TRUE, seed = 176,
+                                 sample.ncell = sample.ncell.use)
+  
+  ITDGds.raw <- estimateSizeFactorsForMatrix(ITDGds.raw)
+  
+  x.inv <- try(ITDGds.raw <- estimateDispersionsForMatrix(ITDGds.raw), silent = TRUE)
+  if ('try-error' %in% class(x.inv) | length(p2pdeg) < 2) {
+    next
+  } else {
+    ITDGds <- ITDGds.raw[p2pdeg, ]
+    
+    ITDGds <- AddTimePointData(ITDGds)
+    
+    new.data <- data.frame(Time_num = seq(min(pData(ITDGds)$Time_num),
+                                          max(pData(ITDGds)$Time_num),
+                                          length.out = ncol(ITDGds)))
+    
+    system.time({
+      exp.cur <- getGeneExpCur(cds = ITDGds, new_data = new.data, relative_expr = T)
+    })
+    
+    exp.cur <- ScaleExpCur(ITDGds, exp.cur)
+    
+    cal.celltype %<>% gsub(" ", ".", .)
+    save(exp.cur, file = paste0(GeneExpCur.wd, cal.celltype, ".exp.cur.rdata"))
+    
+    new.celltype.list %<>% c(cal.celltype)
+  }
+}
+
+
+
+library(ggplot2)
+library(skmeans)
+library(cluster)
+library(ComplexHeatmap)
+library(magrittr)
+library(dplyr)
+library(RColorBrewer)
+library(circlize)
+
+
+select.celltype <- new.celltype.list
+
+exp.cur.all <- NULL
+for (cal.celltype in select.celltype) {
+  load(paste0(GeneExpCur.wd, cal.celltype, ".exp.cur.rdata"))
+  rownames(exp.cur) %<>% paste0(tissue, ":", cal.celltype, ":", .)
+  exp.cur.all %<>% rbind(exp.cur)
+}
+
+
+
+mat = as.matrix(exp.cur.all)
+row.dist <- as.dist((1 - cor(Matrix::t(mat)))/2)
+row.dist[is.na(row.dist)] <- 1
+
+library(qs)
+qsave(row.dist, paste0(save.wd, "row.dist.qs"))
+
+
+library(unikn)
+library(RColorBrewer)
+library(clusterProfiler)
+library(DOSE)
+library(org.Hs.eg.db)
+library(org.Mm.eg.db)
+library(ggExtra)
+library(ggrastr) ## 栅格化图层
+library(ggplot2)
+library(Hmisc) ###capitalize(x) 首字母大写
+library(cowplot)
+library(progress)
+library(data.table)
+
+
+source(paste0(code.wd, "scITDGPlot.R"))
+
+
+
+scITDGPlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = 6, 
+           time.points = time.points, 
+           sample.ncell.use = sample.ncell.use, 
+           show.trajectory = FALSE, show.term = FALSE, OrgDb = org.Mm.eg.db,
+           save.wd = save.wd)
+
+
+k.num = 6
+cluster.order.list = c(1, 5, 6, 2, 3, 4)
+OrgDb = org.Mm.eg.db
+
+scITDGPlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num, 
+           time.points = time.points, 
+           sample.ncell.use = sample.ncell.use, 
+           cluster.order.list = cluster.order.list,
+           show.trajectory = FALSE, show.term = FALSE, OrgDb = OrgDb,
+           save.wd = save.wd)
+
+scITDGPlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num, 
+           time.points = time.points, 
+           sample.ncell.use = sample.ncell.use, 
+           cluster.order.list = cluster.order.list,
+           show.trajectory = TRUE, show.term = FALSE, OrgDb = OrgDb,
+           save.wd = save.wd)
+
+scITDGPlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num, 
+           time.points = time.points, 
+           sample.ncell.use = sample.ncell.use, 
+           cluster.order.list = cluster.order.list,
+           show.trajectory = TRUE, show.term = TRUE, OrgDb = OrgDb,
+           save.wd = save.wd)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# spherical k-means
+skmeansCut <- function(x, k, method = "pclust") {
+  list(cluster = skmeans::skmeans(x, k, method = "pclust")$cluster)
+}
+
+
+hclusCut <- function(x, k, method = "ward.D2", ...) {
+  list(cluster = cutree(hclust(dist(x, method = "euclidean"), method = method, ...), k = k))
+}
+
+
+hclusCut <- function(x, k, ...) {
+  list(cluster = cutree(hclust(dist(x, method = "euclidean"), ...), k = k))
+}
+
+
+# cluster.df <- getClusterData(clusterExpData, save.dir)
+# k.num <- cluster.df$k.num
+# cluster.df <- skmeans::skmeans(x = exp.sub, k = 5, method = "pclust")
+# cluster.df <- hclust(dist(exp.sub.test, method = "euclidean"), method = "ward.D2")
+
+clusterExpData <- cluster::clusGap(exp.cur.all, FUN = hclusCut, K.max = 30, B = 5)
+cluster.df <- getClusterData(clusterExpData, save.wd)
+k.num <- cluster.df$k.num
+
+
+k.num <- 10
+mat = as.matrix(exp.cur.all)
+row.dist <- as.dist((1 - cor(Matrix::t(mat)))/2)
+row.dist[is.na(row.dist)] <- 1
+tree.row = hclust(row.dist, method = "ward.D2")
+mat = mat[tree.row$order, , drop = FALSE]
+labels.row = rownames(mat)
+gene.cluster = cutree(tree.row, k.num)[tree.row$order] 
+gaps.row = which((gene.cluster[-1] - gene.cluster[-length(gene.cluster)]) != 0)
+
+
+annotation_row <- data.frame(Cluster = gene.cluster)
+
+
+cluster.cols <- colorRampPalette(brewer.pal(8,"Dark2"))(k.num)
+names(cluster.cols) <- seq_len(k.num)
+ann_colors = list(Cluster = cluster.cols)
+
+# 1         2         3         4         5         6         7         8
+# "#1B9E77" "#D95F02" "#7570B3" "#E7298A" "#66A61E" "#E6AB02" "#A6761D" "#666666"
+
+
+
+
+png(paste0(save.wd, "clusterheatmap_no_order.png"), width = 1500, height = 2000)
+pheatmap::pheatmap(mat, useRaster = T, cluster_cols = FALSE,
+                   cluster_rows = F, show_rownames = F, 
+                   show_colnames = F, gaps_row = gaps.row,
+                   annotation_row = annotation_row, 
+                   annotation_colors = ann_colors)
+dev.off()
+
+
+
+order.mat.df <- data.frame(cluster = paste0("M", as.vector(gene.cluster)),
+                           gene = labels.row,
+                           id = NA) %>%
+  group_by(cluster) %>% 
+  mutate(id = seq(length(id))) %>% 
+  ungroup %>%
+  as.data.frame
+
+order.mat.df$cluster %>% unique
+# [1] "M2"  "M9"  "M7"  "M10" "M8"  "M5"  "M1"  "M6"  "M4"  "M3"
+
+
+
+# 这里按照顺序orer一下cluster
+# cluster orders
+cluster.order.list <- c(7, 10, 5, 1, 4, 3, 9, 8, 2, 6)
+
+order.mat.df$cluster %<>% factor(levels = paste0("M",cluster.order.list))
+
+if (!is.null(cluster.order.list)) {
+  order.mat.df$cluster %<>% as.vector %>% factor(levels = paste0("M", cluster.order.list))
+  order.mat.df %<>% arrange(cluster, id)
+  gaps.row <- table(order.mat.df$cluster) %>% cumsum %>% .[seq_len(k.num - 1)]
+  cluster_row_slices = FALSE
+}else{
+  cluster_row_slices = TRUE
+}
+
+mat %<>% .[order.mat.df$gene, ]
+
+if (ncol(mat) > 20) {
+  use_raster = TRUE
+} else {
+  use_raster = FALSE
+}
+
+
+#hmcols = colorRampPalette(colors = c("#0e774c","white","#ad2d89"))(length(bks) - 1)
+
+bks <- seq(-3.1, 3.1, by = 0.1)
+hmcols = NULL
+if (is.null(hmcols)) {
+  hmcols <- colorRampPalette(colors = RColorBrewer::brewer.pal(11, "Spectral"))(length(bks) - 1) %>% rev()
+} else {
+  hmcols = colorRampPalette(colors = c("#0e774c","white","#ad2d89"))(length(bks) - 1)
+}
+
+library('unikn')
+time.cols = usecol(pal_seeblau, n = length(time.points))
+names(time.cols) <- time.points
+
+
+anno.size = 5
+
+top.anno = HeatmapAnnotation(show_annotation_name = F,
+                             TimePoint = rep(time.points, each = sample.ncell.use),
+                             col = list(TimePoint = time.cols),
+                             simple_anno_size = unit(anno.size, "mm"), # 设置注释调宽度
+                             show_legend = F)
+
+# !!! 这里设置空位置，展位，给后续拼图留位置
+# bottom.anno = HeatmapAnnotation(empty = anno_empty(border = FALSE, height = unit(5, "mm")))
+
+
+cluster.cols <- colorRampPalette(brewer.pal(8,"Dark2"))(k.num)
+names(cluster.cols) <- paste0("M",seq_len(k.num))
+
+# 这种是一个基因一个基因填充
+# module.anno = rowAnnotation(empty = anno_empty(border = FALSE),
+#                             show_annotation_name = F,
+#                             Module = order.mat.df$cluster,
+#                             col = list(Module = cluster.cols),
+#                             simple_anno_size = unit(0.5, "cm"),
+#                             show_legend = F)
+
+
+# foo格式必须配合切片使用，row_split = annotation_row$cluster
+module.anno = rowAnnotation(foo = anno_block(
+  gp = gpar(fill = cluster.cols[levels(order.mat.df$cluster)]), # 这里注意填充顺序
+  labels = levels(order.mat.df$cluster),
+  labels_gp = gpar(col = "black", fontsize = 10),
+  width = unit(anno.size, "mm"))) # 设置注释调宽度)
+
+
+# !!! 这里在热图右边设置空位置，展位，给后续拼图留位置
+
+# smooth.anno = rowAnnotation(empty = anno_empty(border = FALSE, width = unit(15, "cm")),
+#                             foo = anno_block(gp = gpar(fill = NA, col = NA)))
+
+
+anno.data.mark <- table(order.mat.df$cluster) %>% as.data.frame %>%
+  dplyr::rename(cluster = "Var1", 
+                num = "Freq")
+for (i in seq_len(nrow(anno.data.mark))) {
+  num.median <- ceiling(anno.data.mark$num[i] / 2)
+  if (i == 1) {
+    num.median.all <- num.median
+  } else {
+    num.median <- num.median + cumsum(anno.data.mark$num[1:(i - 1)]) %>% max
+    num.median.all %<>% c(num.median)
+  }
+}
+
+mark.anno = rowAnnotation(
+  link = anno_mark(
+    at = num.median.all, 
+    link_width = unit(5, "mm"), # 控制长短
+    #link_height = unit(1, "mm"),
+    labels = levels(order.mat.df$cluster), 
+    which = "row", 
+    link_gp = gpar(col = cluster.cols[levels(order.mat.df$cluster)], lwd = 2.8), # lwd 控制粗细
+    labels_gp = gpar(fontsize = 0)))
+
+
+heatmap.plot <- ComplexHeatmap::Heatmap(mat, #name = "Expression",  
+                                        col = hmcols, #定义热图由低值到高值的渐变颜色 viridis(length(bks))
+                                        show_row_names = FALSE,  #不展示基因名称
+                                        show_column_names = FALSE,  #不展示基因名称
+                                        cluster_columns = FALSE,
+                                        cluster_rows = FALSE,
+                                        column_title = NULL,
+                                        row_title = NULL,
+                                        #top_annotation = top.anno,
+                                        #bottom_annotation = bottom.anno,
+                                        left_annotation = module.anno,
+                                        right_annotation = mark.anno,
+                                        row_split = order.mat.df$cluster,
+                                        column_names_gp = gpar(fontsize = 6), 
+                                        row_names_gp = gpar(fontsize = 6),
+                                        show_heatmap_legend = F)
+
+
+pdf(paste0(save.wd, "complex_cluster_heatmap.pdf"), width = 6, height = 10)
+heatmap.plot
+dev.off()
+
+
+
+lgd.top = Legend(title = "Time Point", labels = time.points, 
+                 legend_gp = gpar(fill = time.cols),
+                 labels_gp = gpar(fontsize = 10),
+                 title_gp = gpar(fontsize = 10, fontface = "bold"))
+
+lgd.row = Legend(title = "Module", labels = paste0("M",seq_len(k.num)),
+                 legend_gp = gpar(fill = cluster.cols),
+                 labels_gp = gpar(fontsize = 10),
+                 title_gp = gpar(fontsize = 10, fontface = "bold"))
+
+col_fun_prop = circlize::colorRamp2(breaks = seq(-3.1, 3.1, by = 6.2/61), colors = hmcols)
+lgd.exp = Legend(col_fun = col_fun_prop, title = "Rel.Exp", at = c(-3, 0, 3), 
+                 labels = c("Low", "Median", "High"), #break_dist = 1,
+                 labels_gp = gpar(fontsize = 10),
+                 title_gp = gpar(fontsize = 10, fontface = "bold"))
+
+lgd = packLegend(list = list(lgd.top, lgd.row, lgd.exp))
+
+
+library(ggExtra)
+library(ggrastr) ## 栅格化图层
+library(ggplot2)
+library(Hmisc) ###capitalize(x) 首字母大写
+library(patchwork)
+axis.text = element_text(size = 10, colour = "black")
+
+bar.theme <- function() {
+  theme(panel.grid = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        plot.background = element_blank(),
+        axis.line = element_blank(), 
+        axis.text.x = element_text(size = 10, colour = NA), 
+        axis.text.y = element_blank(), 
+        axis.ticks = element_blank(), 
+        axis.title = element_blank(),
+        legend.position = "none")
+}
+
+x.limits = c(1, length(time.points) * sample.ncell.use)
+x.breaks = seq((sample.ncell.use/2), length(time.points)*sample.ncell.use, sample.ncell.use)
+
+
+anno.data.col <- data.frame(num = 0.2, age.group = rep(time.points, each = sample.ncell.use), 
+                            cell = seq_len(length(time.points) * sample.ncell.use))
+anno.data.col$age.group %<>% factor(., levels = time.points)
+
+anno.bar.col <- ggplot() +
+  geom_col(anno.data.col, mapping = aes(x = cell, y = num, fill = age.group),
+           show.legend = F, width = 1) +
+  scale_fill_manual(values = time.cols) +
+  scale_x_continuous(expand = c(0.02, 0.02)) +
+  bar.theme() +
+  theme(plot.margin = unit(c(0,0,0,0), "cm")) 
+
+#guides(fill = guide_legend(title = 'Time span'))
+
+anno.data.row <- data.frame(num = 0.2, Expression = bks)
+anno.bar.row <- ggplot() +
+  geom_col(anno.data.row, mapping = aes(x = Expression, y = num, fill = Expression), 
+           show.legend = F, width = 0.1) + ##注意，宽度不能设置太大，否则末端不合理
+  scale_fill_gradientn(colours = hmcols) +
+  scale_x_continuous(expand = c(0.02, 0.02)) +
+  coord_flip() +
+  bar.theme() +
+  theme(plot.margin = unit(c(0,0,0,0), "cm")) 
+
+
+order.cluster <- order.mat.df$cluster %>% levels
+colnames(mat) <- seq_len(ncol(mat))
+
+show.exp.bat = TRUE
+
+
+
+library(clusterProfiler)
+library(DOSE)
+library(org.Mm.eg.db)
+
+plot.smooth.list <- list()
+for (i in 1:length(order.cluster)) {
+  newgene <- subset(order.mat.df, cluster == order.cluster[i]) %>% .$gene %>% as.vector
+  newdata <- mat[newgene,]
+  tmp_data <- t(newdata)
+  
+  myFUN <- function(x){
+    df = data.frame(count = x, cell = rownames(tmp_data))
+    return(df)
+  }
+  
+  line_data = do.call(rbind, apply(tmp_data,2,myFUN))
+  line_data$group = rep(colnames(tmp_data), each = length(rownames(tmp_data)))
+  line_data$cell = factor(line_data$cell, levels = seq_len(length(time.points) * sample.ncell.use))
+  line_data$smooth = rep('smooth', length(rownames(line_data)))
+  
+  line_data$cell = as.numeric(line_data$cell)
+  line_data$age.group <- rep(rep(time.points, each = sample.ncell.use), ncol(tmp_data))
+  
+  gene_num <- length(newgene)
+  
+  g <- ggplot(data = line_data,aes(x = cell,y = count, group = group))
+  title <- paste0(order.cluster[i], " (n = ", gene_num, ")") %>% gsub("M", "Module ", .)
+  x.limits = c(1, length(time.points) * sample.ncell.use)
+  x.breaks = seq((length(time.points) / 2), length(time.points) * sample.ncell.use, sample.ncell.use)
+  p.line <- g + 
+    # rasterise(
+    #   stat_smooth(method = lm, formula = y~poly(x,3), se = F, colour = "#DCDCDC", size = 0.5, alpha = 0.2),
+    #   dpi = 300) +
+    geom_smooth(aes(group = smooth), colour = cluster.cols[order.cluster[i]], formula = y ~ poly(x, 3),
+                method = lm, size = 1.5, alpha = 1, se = F) +
+    labs(x = "", y = "") +
+    annotate("text", x = (length(time.points) * sample.ncell.use)/2, 
+             y = 2.6, label = title, size = 3, colour = "black") +
+    coord_cartesian(ylim = c(-3, 3)) +
+    scale_y_continuous(breaks = seq(-3, 3, 1), expand = c(0.02, 0.02)) +
+    scale_x_continuous(limits = x.limits, breaks = x.breaks, expand = c(0.02, 0.02),
+                       labels = time.points) + 
+    theme_bw() + 
+    theme(panel.grid = element_blank(),
+          panel.background = element_blank(),
+          plot.background = element_blank(),
+          plot.title = element_text(size = 10, colour = "black", hjust = 0.5), 
+          axis.text.x = element_text(size = 10, colour = NA), 
+          axis.text.y = element_blank(), 
+          axis.ticks = element_blank(),
+          axis.title = element_text(size = 10, colour = "black")) +
+    theme(plot.margin = unit(c(0,0,0,0), "cm")) # 左边和上边页边距为0
+  
+  # 创建一个等边三角形
+  anno.data.triangle <- data.frame(
+    x = c(0, 0, sqrt(3) / 2),
+    y = c(0, 1, 0.5)
+  ) %>% .[c(2, 3, 1), ] # 将三角形逆时针旋转90度
+  anno.data.triangle$x %<>% -.
+  p.tri <- ggplot(anno.data.triangle, aes(x = x, y = y)) +
+    geom_polygon(fill = cluster.cols[order.cluster[i]]) +
+    geom_segment(aes(x = -1.15, xend = -0.75, y = 0.5, yend = 0.5), 
+                 col = cluster.cols[order.cluster[i]], size = 1) +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    coord_fixed() +
+    bar.theme() +
+    theme(plot.margin = unit(c(0,0,0,0), "cm"))
+  
+  p.final <- cowplot::plot_grid(p.tri, anno.bar.row, NULL, p.line, nrow = 1,
+                                rel_widths = c(3, 1.2, -1, 12), align = "h") # 
+  
+  # plot_spacer() 占位，-1.5控制拼图间隔
+  plot.smooth.list[[i]] <- p.final
+}
+plot.smooth <- cowplot::plot_grid(plotlist = plot.smooth.list, ncol = 1, align = "hv")
+
+
+get_wraper <- function(width) {
+  function(x) {
+    lapply(strwrap(x, width = width, simplify = FALSE), paste, collapse = "\n")
+  }
+}
+nchar.cut <- 40
+
+plot.term.list <- list()
+for (i in 1:length(order.cluster)) {
+  newgene <- subset(order.mat.df, cluster == order.cluster[i]) %>% .$gene %>% as.vector
+  gene.go <- as.vector(newgene)
+  gene.go.all <- NULL
+  for (g in gene.go) {
+    gene.select <- strsplit(g, ":") %>% unlist %>% tail(., n = 1)
+    gene.select %<>% strsplit(., "-") %>% unlist %>% head(., n = 1)
+    gene.go.all %<>% c(gene.select)
+  }
+  
+  gene.df <- bitr(gene.go.all, fromType = "SYMBOL", toType = c("ENTREZID"), OrgDb = org.Mm.eg.db)
+  
+  
+  universe.df.all <- NULL 
+  for (g in rownames(seurat.object)) {
+    gene.select <- strsplit(g, "-") %>% unlist %>% head(., n = 1)
+    universe.df.all %<>% c(gene.select)
+  }
+  universe.df <- bitr(universe.df.all, fromType = "SYMBOL", toType = c("ENTREZID"), OrgDb = org.Mm.eg.db)
+  
+  ego <- enrichGO(gene = gene.df$ENTREZID, 
+                  universe = universe.df$ENTREZID, #背景基因集
+                  OrgDb = org.Mm.eg.db, #没有organism="human"，改为OrgDb=org.Hs.eg.db
+                  #keyType = 'SYMBOL', # ENSEMBL
+                  ont = "BP", #也可以是 CC  BP  MF中的一种
+                  pAdjustMethod = "BH", #矫正方式 holm”, “hochberg”, “hommel”, “bonferroni”, “BH”, “BY”, “fdr”, “none”中的一种
+                  pvalueCutoff = 0.05, #P值会过滤掉很多，可以全部输出
+                  qvalueCutoff = 0.2,
+                  readable = TRUE) #Gene ID 转成gene Symbol ，易读
+  
+  term.df <- fortify(ego, showCategory = 3) %>% dplyr::select(Description, p.adjust) %>%
+    dplyr::mutate(neg_LogP = -log10(p.adjust)) %>%
+    dplyr::arrange(desc(neg_LogP))
+  term.df$neg_LogP[which(term.df$neg_LogP > 50)] <- 50
+  term.df$Description %<>% as.vector
+  
+  nchar.term <- nchar(term.df$Description)
+  if (!max(nchar.term) > nchar.cut) {
+    term.df$Description[1] <- paste0(term.df$Description[1], paste(rep(" ", (nchar.cut - nchar.term[1])), collapse = ""))
+  }
+  term.df$Description %<>% capitalize %>% factor(., levels = rev(.))
+  
+  p.term <- ggplot(data = term.df, mapping = aes(x = neg_LogP, y = Description)) +
+    geom_bar(stat = "identity", width = 0.5, fill = cluster.cols[order.cluster[i]]) + #select_color[i] #80cccc
+    #labs(x = "-log10 (adj.pvalue)", y = "")+
+    labs(x = "", y = "") +
+    #scale_x_discrete(labels = get_wraper(50)) +
+    theme_bw() +
+    theme(panel.grid = element_blank(),
+          panel.background = element_blank(),
+          plot.background = element_blank(),
+          axis.title = element_text(size = 10, colour = "black"),
+          axis.text = element_text(size = 10, colour = "black")) +
+    theme(plot.margin = unit(c(0, 0, 0, 0), "cm")) + #  上 右 下 左
+    scale_x_reverse() + ###reverse用来翻转x轴或y轴
+    scale_y_discrete(labels = get_wraper(nchar.cut), position = "right")   ####用来将y轴移动位置
+  
+  # plot_spacer() 占位，-1.5控制拼图间隔
+  #  plot.term.list[[i]] <- cowplot::plot_grid(p.term, NULL, ncol = 1, rel_heights = c(5, -0.7), align = "v") #水平对齐("h")还是垂直对齐("v")
+  plot.term.list[[i]] <- p.term
+}
+
+plot.term <- cowplot::plot_grid(plotlist = plot.term.list, ncol = 1, align = "hv")
+
+plot.ggplot <- cowplot::plot_grid(plot.smooth, NULL, plot.term, nrow = 1, 
+                                  rel_widths = c(1.5, 0.05, 3), align = "hv")
+
+
+
+pdf(paste0(save.wd, "Aging_",tissue, "_scITDGPlot_combined_20231008.pdf"), width = 12, height = 12, bg = "transparent")                        
+draw(heatmap.plot, padding = unit(c(8, 2, 2, 200), "mm")) ## see right heatmap in following 底部、左侧、顶部和右
+
+line.subvp <- grid::viewport(x = 0.64, y = 0.495, width = 0.6, height = 1) # x越小越靠左边，y越小越靠下
+print(plot.ggplot, vp = line.subvp)
+
+col.bar.subvp <- grid::viewport(x = 0.174, y = 0.005, width = 0.314, height = 0.035)
+print(anno.bar.col, vp = col.bar.subvp)
+
+col.bar.subvp <- grid::viewport(x = 0.467, y = 0.005, width = 0.145, height = 0.035)
+print(anno.bar.col, vp = col.bar.subvp)
+
+draw(lgd, x = unit(0.99, "npc"), y = unit(0.5, "npc"), just = c("right")) # 1 npc为最右边
+dev.off()
+
+
+library(data.table)
+setDT(order.mat.df)[, c("tissue","celltype","genename") := tstrsplit(gene, ":")]
+order.mat.df %<>% as.data.frame
+order.mat.df$celltype %<>% gsub(pattern = "\\.", replacement = " ", .)
+
+save(order.mat.df, file = paste0(deg.wd, "Aging_",tissue, "_scITDG_Order_Cluster_GeneName_20231008.rdata"))

@@ -1,0 +1,518 @@
+
+'''
+cd /data4/zhengyandong/12_scITDG/ST_Hippo
+source activate R4.0
+'''
+
+
+library(stringr)
+
+
+seurat.object <- readRDS("hippo_new_data_obj.rds")
+seurat.object$age <- as.numeric(str_extract(seurat.object$orig.ident, "\\d+(?=M)"))
+seurat.object$Group <- paste0(seurat.object$age, "m")
+
+
+
+library(stringr)
+library(tibble)
+library(dplyr)
+library(BiocGenerics)
+library(Biobase)
+
+
+
+code.wd <- "/data4/zhengyandong/12_scITDG/RPackage/scITDG/R/"
+source(paste0(code.wd, "AddTimePointData.R"))
+source(paste0(code.wd, "calFitModel.R"))
+source(paste0(code.wd, "calVurveApply.R"))
+source(paste0(code.wd, "CreateITDGObject.R"))
+source(paste0(code.wd, "estimateDispersionsForMatrix.R"))
+source(paste0(code.wd, "estimateSizeFactorsForMatrix.R"))
+source(paste0(code.wd, "getFitModel.R"))
+source(paste0(code.wd, "getGeneExpCur.R"))
+source(paste0(code.wd, "parametricDispersionFit.R"))
+source(paste0(code.wd, "responseMatrix.R"))
+source(paste0(code.wd, "disp_calc_helper_NB.R"))
+source(paste0(code.wd, "ScaleExpCur.R"))
+source(paste0(code.wd, "skmeansCut.R"))
+source(paste0(code.wd, "getClusterData.R"))
+source(paste0(code.wd, "getP2PDEGs.R"))
+source(paste0(code.wd, "scITDGPlot.R"))
+source(paste0(code.wd, "scITDGIntegratePlot.R"))
+
+
+library(dplyr)
+library(magrittr)
+library(Biobase)
+library(VGAM)
+library(Matrix)
+
+work.wd <- "/data4/zhengyandong/12_scITDG/ST_Hippo/"
+
+# 导入facs数据
+tissue <- "Hippo"
+
+order.list <- c("4m", "13m", "19m")
+seurat.object@meta.data$Group %<>% factor(levels = order.list)
+
+save.wd <- paste0(work.wd, "TissueAnalysis/", tissue, "/")
+dir.create(save.wd, recursive = TRUE)
+
+
+# 依次计算任意两个时间点的DEGs
+deg.wd <- paste0(save.wd, "DEGs.list.negbinom/")
+dir.create(deg.wd)
+
+time.points <- order.list
+celltype.list <- seurat.object@meta.data$celltype %>% as.vector %>% unique
+
+future::plan(strategy = 'multicore', workers = 20)
+
+
+p2pdeg.com <- do.call(rbind, lapply(X = celltype.list, FUN = function(celltype) {
+  getP2PDEGs(object = seurat.object,
+             celltype.use = "celltype", # celltype anno
+             celltype = celltype,
+             time.points.use = "Group",
+             time.points = order.list)
+}))
+
+p2pdeg.com %<>% .[!duplicated(.),]
+
+save(p2pdeg.com, file = paste0(deg.wd, "All.celltype.RNA.P2PDEGs.negbinom.rdata"))
+
+
+#
+deg.wd <- paste0(save.wd, "DEGs.list.negbinom/")
+dir.create(deg.wd)
+
+load(paste0(deg.wd, "All.celltype.RNA.P2PDEGs.negbinom.rdata"))
+p2pdeg.com$cell.type %<>% as.vector
+
+# 还是一种细胞类型一种细胞类型做吧
+p2p.deg.list <- p2pdeg.com %>% subset(abs(avg_log2FC) >= 0.25) %>% dplyr::select(gene, cell.type, class)
+
+
+sample.ncell.use = 300
+
+methods::setClass("scITDGDataSet",
+                  contains = "ExpressionSet",
+                  slots = c(expressionFamily = "vglmff",
+                            lowerDetectionLimit = "numeric",
+                            dispFitInfo = "environment"),
+                  prototype = prototype(
+                    methods::new("VersionedBiobase",
+                                 versions = c(classVersion("ExpressionSet"),
+                                              scITDGDataSet = "1.2.0" )))
+)
+
+new.celltype.list <- NULL
+GeneExpCur.wd <- paste0(save.wd, "GeneExpCur/")
+dir.create(GeneExpCur.wd)
+
+for (cal.celltype in celltype.list) {
+  p2pdeg <- subset(p2p.deg.list, cell.type == cal.celltype) %>%
+    .$gene %>% as.vector %>% unique
+
+  ITDGds.raw <- CreateITDGObject(object = seurat.object,
+                                 celltype.use = "celltype", celltype = cal.celltype,
+                                 time.points.use = "Group", time.points = order.list,
+                                 random.value = TRUE, seed = 176,
+                                 sample.ncell = sample.ncell.use)
+
+  ITDGds.raw <- estimateSizeFactorsForMatrix(ITDGds.raw)
+
+  x.inv <- try(ITDGds.raw <- estimateDispersionsForMatrix(ITDGds.raw), silent = TRUE)
+  if ('try-error' %in% class(x.inv) | length(p2pdeg) < 2) {
+    next
+  } else {
+    ITDGds <- ITDGds.raw[p2pdeg, ]
+
+    ITDGds <- AddTimePointData(ITDGds)
+
+    new.data <- data.frame(Time_num = seq(min(pData(ITDGds)$Time_num),
+                                          max(pData(ITDGds)$Time_num),
+                                          length.out = ncol(ITDGds)))
+
+    system.time({
+      exp.cur <- getGeneExpCur(cds = ITDGds, new_data = new.data, relative_expr = T)
+    })
+
+    exp.cur <- ScaleExpCur(ITDGds, exp.cur)
+
+    cal.celltype %<>% gsub(" ", ".", .)
+    save(exp.cur, file = paste0(GeneExpCur.wd, cal.celltype, ".exp.cur.rdata"))
+
+    new.celltype.list %<>% c(cal.celltype)
+  }
+}
+
+
+
+library(ggplot2)
+library(ComplexHeatmap)
+library(RColorBrewer)
+library(circlize)
+library(unikn)
+library(clusterProfiler)
+library(DOSE)
+library(org.Hs.eg.db)
+library(ggExtra)
+library(ggrastr) ## 栅格化图层
+library(Hmisc) ###capitalize(x) 首字母大写
+library(cowplot)
+library(progress)
+library(data.table)
+
+
+
+GeneExpCur.wd <- paste0(save.wd, "GeneExpCur/")
+geneexp.list <- list.files(GeneExpCur.wd)
+select.celltype <- strsplit(x = geneexp.list, split = ".exp.cur.rdata") %>% unlist
+
+exp.cur.all <- NULL
+for (cal.celltype in select.celltype) {
+  load(paste0(GeneExpCur.wd, cal.celltype, ".exp.cur.rdata"))
+  rownames(exp.cur) %<>% paste0(tissue, ":", cal.celltype, ":", .)
+  exp.cur.all %<>% rbind(exp.cur)
+}
+
+mat = as.matrix(exp.cur.all)
+row.dist <- as.dist((1 - cor(Matrix::t(mat)))/2)
+row.dist[is.na(row.dist)] <- 1
+
+saveRDS(row.dist, paste0(save.wd, "row.dist.rds"))
+
+
+
+
+
+
+k.num = 15
+scITDGPlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num,
+           time.points = time.points,
+           sample.ncell.use = sample.ncell.use,
+           show.trajectory = FALSE, show.term = FALSE, OrgDb = org.Hs.eg.db,
+           save.wd = save.wd)
+
+
+
+
+integrate.cluster.list <- list(c(3, 11, 14), c(5, 10, 12, 13), c(1), c(6, 7, 8), c(2, 4, 9, 15))
+length(unlist(integrate.cluster.list))
+seq_len(15)[which(!seq_len(15) %in% unlist(integrate.cluster.list))]
+
+OrgDb = org.Hs.eg.db
+
+scITDGIntegratePlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num,
+                    time.points = time.points,
+                    sample.ncell.use = sample.ncell.use,
+                    integrate.cluster.list = integrate.cluster.list,
+                    show.trajectory = FALSE, show.term = FALSE, OrgDb = OrgDb,
+                    save.wd = save.wd)
+
+scITDGIntegratePlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num,
+                    time.points = time.points,
+                    sample.ncell.use = sample.ncell.use,
+                    integrate.cluster.list = integrate.cluster.list,
+                    show.trajectory = TRUE, show.term = FALSE, OrgDb = OrgDb,
+                    save.wd = save.wd)
+
+scITDGIntegratePlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num,
+                    time.points = time.points,
+                    sample.ncell.use = sample.ncell.use,
+                    integrate.cluster.list = integrate.cluster.list,
+                    show.trajectory = TRUE, show.term = TRUE, OrgDb = OrgDb,
+                    save.wd = save.wd)
+
+
+
+
+
+load(paste0(save.wd, "Hippo_scITDG_Cluster_GeneName_Integrate.rdata"))
+
+head(order.mat.df)
+
+
+setDT(order.mat.df)[, c("column1", "column2", "column3") := tstrsplit(gene, ":")]
+order.mat.df %<>% dplyr::rename("tissue" = "column1",
+                                "celltype" = "column2",
+                                "genename" = "column3") %>%
+  as.data.frame %>%
+  dplyr::select(tissue, cluster, genename, celltype, id)
+
+
+write.csv(order.mat.df, paste0(save.wd, "Hippo_scITDG_Cluster_GeneName.csv"), row.names = FALSE)
+
+
+filter.genelist <- read.csv(paste0(paste0(save.wd, "Hippo_scITDG_Cluster_GeneName_filtered.csv")))
+
+filter.genelist$gene <- paste(tissue, filter.genelist$celltype, filter.genelist$genename, sep = ":")
+
+
+
+filter.mat = as.matrix(exp.cur.all)
+
+del.gene <- setdiff(filter.genelist$gene, rownames(filter.mat))
+# [1] "Hippo:CA1_adjacent:8-Sep"     "Hippo:InN_Sst:8-Sep"
+# [3] "Hippo:Fasciola_cinerea:8-Sep" "Hippo:OL:4-Sep"
+# [5] "Hippo:Erythrocyte:8-Sep"      "Hippo:Astrocyte:3-Sep"
+# [7] "Hippo:SMC:3-Sep"              "Hippo:Fasciola_cinerea:3-Sep"
+# [9] "Hippo:OL:3-Sep"
+
+filter.genelist %<>% dplyr::filter(!gene %in% del.gene)
+
+setdiff(filter.genelist$gene, rownames(filter.mat))
+
+filter.mat %<>% .[filter.genelist$gene,]
+
+
+filter.exp.cur.all
+
+
+filter.row.dist <- as.dist((1 - cor(Matrix::t(filter.mat)))/2)
+filter.row.dist[is.na(filter.row.dist)] <- 1
+
+saveRDS(filter.row.dist, paste0(save.wd, "filter.row.dist.rds"))
+
+
+
+
+k.num = 15
+scITDGPlot(exp.cur = filter.mat, row.dist = filter.row.dist, k.num = k.num,
+           time.points = time.points,
+           sample.ncell.use = sample.ncell.use,
+           show.trajectory = FALSE, show.term = FALSE, OrgDb = org.Hs.eg.db,
+           save.wd = save.wd)
+
+
+
+
+integrate.cluster.list <- list(c(3, 4), c(6, 7, 8), c(1, 2, 5), c(9, 10, 11, 12), c(13, 14, 15))
+length(unlist(integrate.cluster.list))
+seq_len(15)[which(!seq_len(15) %in% unlist(integrate.cluster.list))]
+
+OrgDb = org.Hs.eg.db
+
+scITDGIntegratePlot(exp.cur = filter.mat, row.dist = filter.row.dist, k.num = k.num,
+                    time.points = time.points,
+                    sample.ncell.use = sample.ncell.use,
+                    integrate.cluster.list = integrate.cluster.list,
+                    show.trajectory = TRUE, show.term = FALSE, OrgDb = OrgDb,
+                    save.wd = save.wd)
+
+
+
+
+load(paste0(save.wd, "Hippo_scITDG_Cluster_GeneName_Integrate.rdata"))
+
+head(order.mat.df)
+
+
+setDT(order.mat.df)[, c("column1", "column2", "column3") := tstrsplit(gene, ":")]
+order.mat.df %<>% dplyr::rename("tissue" = "column1",
+                                "celltype" = "column2",
+                                "genename" = "column3") %>%
+  as.data.frame %>%
+  dplyr::select(tissue, cluster, genename, celltype, id)
+
+
+write.csv(order.mat.df, paste0(save.wd, "Hippo_scITDG_Cluster_GeneName_20240222.csv"), row.names = FALSE)
+
+
+
+
+
+library(unikn)
+library(RColorBrewer)
+library(clusterProfiler)
+library(DOSE)
+library(org.Hs.eg.db)
+library(org.Mm.eg.db)
+library(ggExtra)
+library(ggrastr) ## 栅格化图层
+library(ggplot2)
+library(Hmisc) ###capitalize(x) 首字母大写
+library(cowplot)
+library(progress)
+library(data.table)
+
+
+
+
+
+
+
+
+
+'
+cd /data4/zhengyandong/12_scITDG/TabulaMurisSenis/TissueAnalysis/Spleen
+
+mkdir OldVersion
+mv *.pdf OldVersion/
+mv *GeneName.rdata OldVersion/
+mv row.dist.qs OldVersion
+
+source activate R4.0
+R
+
+'
+
+
+code.wd <- "/data4/zhengyandong/12_scITDG/RPackage/scITDG/R/"
+source(paste0(code.wd, "AddTimePointData.R"))
+source(paste0(code.wd, "calFitModel.R"))
+source(paste0(code.wd, "calVurveApply.R"))
+source(paste0(code.wd, "CreateITDGObject.R"))
+source(paste0(code.wd, "estimateDispersionsForMatrix.R"))
+source(paste0(code.wd, "estimateSizeFactorsForMatrix.R"))
+source(paste0(code.wd, "getFitModel.R"))
+source(paste0(code.wd, "getGeneExpCur.R"))
+source(paste0(code.wd, "parametricDispersionFit.R"))
+source(paste0(code.wd, "responseMatrix.R"))
+source(paste0(code.wd, "disp_calc_helper_NB.R"))
+source(paste0(code.wd, "ScaleExpCur.R"))
+source(paste0(code.wd, "skmeansCut.R"))
+source(paste0(code.wd, "getClusterData.R"))
+source(paste0(code.wd, "getP2PDEGs.R"))
+source(paste0(code.wd, "scITDGPlot.R"))
+source(paste0(code.wd, "scITDGIntegratePlot.R"))
+
+
+
+library(Seurat)
+library(magrittr)
+library(VGAM)
+library(stringr)
+library(tibble)
+library(dplyr)
+library(BiocGenerics)
+library(Biobase)
+library(Matrix)
+library(ggplot2)
+library(skmeans)
+library(cluster)
+library(ComplexHeatmap)
+library(RColorBrewer)
+library(circlize)
+library(qs)
+library(unikn)
+library(clusterProfiler)
+library(DOSE)
+library(org.Hs.eg.db)
+library(org.Mm.eg.db)
+library(ggExtra)
+library(ggrastr) ## 栅格化图层
+library(Hmisc) ###capitalize(x) 首字母大写
+library(cowplot)
+library(progress)
+library(data.table)
+
+
+
+
+work.wd <- "/data4/zhengyandong/12_scITDG/TabulaMurisSenis/"
+
+# 导入facs数据
+tissue <- "Spleen"
+save.wd <- paste0(work.wd, "TissueAnalysis/", tissue, "/")
+seurat.object <- readRDS(paste0(save.wd, "TabulaMurisSenis_", tissue, "_Scanpy2Seurat_CombinedObject.rds"))
+
+
+sample.ncell.use = 200
+time.points <- c("1m", "3m", "18m", "21m", "24m", "30m")
+
+
+GeneExpCur.wd <- paste0(save.wd, "GeneExpCur/")
+geneexp.list <- list.files(GeneExpCur.wd)
+select.celltype <- strsplit(x = geneexp.list, split = ".exp.cur.rdata") %>% unlist
+
+exp.cur.all <- NULL
+for (cal.celltype in select.celltype) {
+  load(paste0(GeneExpCur.wd, cal.celltype, ".exp.cur.rdata"))
+  rownames(exp.cur) %<>% paste0(tissue, ":", cal.celltype, ":", .)
+  exp.cur.all %<>% rbind(exp.cur)
+}
+
+
+mat = as.matrix(exp.cur.all)
+row.dist <- as.dist((1 - cor(Matrix::t(mat)))/2)
+row.dist[is.na(row.dist)] <- 1
+
+qsave(row.dist, paste0(save.wd, "row.dist.qs"))
+
+
+'
+row.dist <- qread(paste0(save.wd, "row.dist.qs"))
+'
+
+
+
+
+k.num = 15
+scITDGPlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num,
+           time.points = time.points,
+           sample.ncell.use = sample.ncell.use,
+           show.trajectory = FALSE, show.term = FALSE, OrgDb = org.Mm.eg.db,
+           save.wd = save.wd)
+
+
+
+
+
+integrate.cluster.list <- list(c(1,5,7), c(6,8,10,12), c(3,4,13,14,15), c(2,9,11))
+length(unlist(integrate.cluster.list))
+seq_len(15)[which(!seq_len(15) %in% unlist(integrate.cluster.list))]
+
+OrgDb = org.Mm.eg.db
+
+scITDGIntegratePlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num,
+                    time.points = time.points,
+                    sample.ncell.use = sample.ncell.use,
+                    integrate.cluster.list = integrate.cluster.list,
+                    show.trajectory = FALSE, show.term = FALSE, OrgDb = OrgDb,
+                    save.wd = save.wd)
+
+scITDGIntegratePlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num,
+                    time.points = time.points,
+                    sample.ncell.use = sample.ncell.use,
+                    integrate.cluster.list = integrate.cluster.list,
+                    show.trajectory = TRUE, show.term = FALSE, OrgDb = OrgDb,
+                    save.wd = save.wd)
+
+scITDGIntegratePlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num,
+                    time.points = time.points,
+                    sample.ncell.use = sample.ncell.use,
+                    integrate.cluster.list = integrate.cluster.list,
+                    show.trajectory = TRUE, show.term = TRUE, OrgDb = OrgDb,
+                    save.wd = save.wd)
+
+
+load(paste0(save.wd, "Hippo_scITDG_Cluster_GeneName_Integrate.rdata"))
+
+head(order.mat.df)
+
+
+setDT(order.mat.df)[, c("column1", "column2", "column3") := tstrsplit(gene, ":")]
+order.mat.df %<>% dplyr::rename("tissue" = "column1",
+                                "celltype" = "column2",
+                                "genename" = "column3") %>%
+  as.data.frame %>%
+  dplyr::select(tissue, cluster, genename, celltype, id)
+
+
+write.csv(order.mat.df, paste0(save.wd, "Hippo_scITDG_Cluster_GeneName.csv"), row.names = FALSE)
+
+
+
+
+
+
+
+
+
+
+
+
+
