@@ -1,6 +1,6 @@
 # scITDG
 `scITDG` is a R package for identifying time-dependent genes at the single-cell resolution
-![Screenshot](https://github.com/YandongZheng/scITDG/raw/main/logo.png)
+<img src="https://github.com/YandongZheng/scITDG/raw/main/logo.png" alt="Screenshot" style="zoom: 25%;" />
 
 ## Requirements
     install.packages(c("devtools", "data.table", "dplyr", "VGAM", "Seurat", "magrittr", "methods", "Biobase", "BiocGenerics", "ggplot2", "Matrix", "ComplexHeatmap", "RColorBrewer", "circlize", "progress", "Hmisc", "unikn", "clusterProfiler", "cowplot", "ggrastr"))
@@ -160,7 +160,7 @@ scITDGPlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = 6,
            save.wd = save.wd)
 ```
 
-![Screenshot](https://github.com/YandongZheng/scITDG/raw/main/NoTrajectory_NoTerm_NoOrder.png)
+<img src="https://github.com/YandongZheng/scITDG/raw/main/NoTrajectory_NoTerm_NoOrder.png" alt="Screenshot" style="zoom: 25%;" />
 
 
 
@@ -175,7 +175,7 @@ scITDGPlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num,
            save.wd = save.wd)
 ```
 
-![Screenshot](https://github.com/YandongZheng/scITDG/raw/main/NoTrajectory_NoTerm.png)
+<img src="https://github.com/YandongZheng/scITDG/raw/main/NoTrajectory_NoTerm.png" alt="Screenshot" style="zoom: 25%;" />
 
 ```R
 scITDGPlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num, 
@@ -191,4 +191,4 @@ scITDGPlot(exp.cur = exp.cur.all, row.dist = row.dist, k.num = k.num,
 (-) [===============================================================]100% [ET: 00:00:12]
 ```
 
-![Screenshot](https://github.com/YandongZheng/scITDG/raw/main/scITDG_Plot.png)
+<img src="https://github.com/YandongZheng/scITDG/raw/main/scITDG_Plot.png" alt="Screenshot" style="zoom:25%;" />
