@@ -30,7 +30,6 @@ estimateDispersionsForMatrix <- function(ITDGds, modelFormulaStr = "~ 1", relati
   progress_opts <- options()$dplyr.show_progress
   options(dplyr.show_progress = T)
 
-  # FIXME: this needs refactoring, badly.
   if (length(model_terms) > 1 || (length(model_terms) == 1 && model_terms[1] != "1")) {
     ITDGds_pdata <- dplyr::group_by(dplyr::select(tibble::rownames_to_column(pData(ITDGds)),
                                                   "rowname", .dots = model_terms),
@@ -44,11 +43,9 @@ estimateDispersionsForMatrix <- function(ITDGds, modelFormulaStr = "~ 1", relati
       disp_calc_helper_NB(ITDGds[,.$rowname], ITDGds@expressionFamily, min_cells_detected)))
   }
 
-  #message("fitting disersion curves")
-  #print (disp_table)
   if (!is.list(disp_table))
     stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")
-  #disp_table <- do.call(rbind.data.frame, disp_table)
+
   disp_table <- subset(disp_table, is.na(mu) == FALSE)
   res <- parametricDispersionFit(disp_table)
   fit <- res[[1]]
@@ -57,7 +54,6 @@ estimateDispersionsForMatrix <- function(ITDGds, modelFormulaStr = "~ 1", relati
   if (remove_outliers) {
     CD <- cooks.distance(fit)
     cooksCutoff <- 4 / nrow(disp_table)
-    message(paste("Removing", length(CD[CD > cooksCutoff]), "outliers"))
     outliers <- union(names(CD[CD > cooksCutoff]), setdiff(row.names(disp_table), names(CD)))
     res <- parametricDispersionFit(disp_table[row.names(disp_table) %in% outliers == FALSE,])
     fit <- res[[1]]
