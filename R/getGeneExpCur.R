@@ -1,6 +1,6 @@
 #' Title
 #'
-#' @param cds
+#' @param itdg_cds
 #' @param new_data
 #' @param relative_expr
 #'
