@@ -4,7 +4,7 @@
 scITDG, a tool designed for the analysis of time-dependent gene expression in single-cell transcriptomic sequencing data. scITDG stands out by its unique ability to identify dynamic gene expression patterns across various time points at single-cell resolution, which is pivotal for deciphering complex biological processes such as aging and tissue regeneration. The tool is fully compatible with widely used single-cell analysis platforms like Seurat and Scanpy. By integrating natural cubic splines regression with bootstrapping resampling, scITDG not only enhances the functionality of these platforms but also broadens their applicability.
 
 <p align="center">
-  <img src="https://github.com/YandongZheng/scITDG/raw/main/images/scITDG_framework_overview.png" alt="Description" width=50%;" />
+  <img src="https://github.com/YandongZheng/scITDG/raw/main/images/scITDG_framework_overview.png" alt="Description" style="zoom: 50%;" />
 </p>
 
 
