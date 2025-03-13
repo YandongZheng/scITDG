@@ -233,6 +233,6 @@ scITDGPlot(object = scitdg,
 ```
 
 <p align="center">
-  <img src="https://github.com/YandongZheng/scITDG/raw/main/images/Limb_Muscle_scITDGPlot.png" alt="Description" width=50%;" />
+  <img src="https://github.com/YandongZheng/scITDG/raw/main/images/Limb_Muscle_scITDGPlot.png" alt="Description" width=100%;" />
 </p>
 
