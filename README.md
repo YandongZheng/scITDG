@@ -46,14 +46,7 @@ The demo data (Limb_Muscle_10000) is sourced from the Tabula Muris Senis open-ac
 #### Load Packages
 ```R
 library(Seurat)
-library(magrittr)
-library(VGAM)
-library(stringr)
-library(tibble)
-library(dplyr)
-library(BiocGenerics)
-library(Biobase)
-library(Matrix)
+library(scITDG)
 ```
 #### Load Demo Data
 
@@ -81,8 +74,6 @@ Limb_Muscle_10000@meta.data$Group %<>% factor(levels = time.points)
 # Extract the unique list of cell types from the Seurat object's meta.data
 celltype.list <- Limb_Muscle_10000@meta.data$cell_ontology_class %>% as.vector %>% unique
 ```
-
-
 
 ### 2. Seurat was used for  Pairwise differential expression analysis with Seurat
 
@@ -208,7 +199,7 @@ scITDGPlot(object = scitdg,
 
 #### Display Heatmap with Gene Expression Trajectories and Functional Enrichment Analysis
 
-Additionally, scITDG can perform gene enrichment analysis for each pattern by setting show.term = TRUE, using [clusterProfiler](https://yulab-smu.top/biomedical-knowledge-mining-book/). Before this, you need to load species-specific gene annotation packages from Bioconductor (e.g., org.Hs.eg.db for human, org.Mm.eg.db for mouse, org.Dm.eg.db for Drosophila). Packages for other species can be loaded accordingly from [Bioconductor](https://bioconductor.org/packages/release/BiocViews.html#___OrgDb).
+Additionally, scITDG can perform gene enrichment analysis for each pattern by setting `show.term = TRUE`, using [clusterProfiler](https://yulab-smu.top/biomedical-knowledge-mining-book/). Before this, you need to load species-specific gene annotation packages from Bioconductor (e.g., org.Hs.eg.db for human, org.Mm.eg.db for mouse, org.Dm.eg.db for Drosophila). Packages for other species can be loaded accordingly from [Bioconductor](https://bioconductor.org/packages/release/BiocViews.html#___OrgDb).
 
 
 ```R
@@ -219,7 +210,6 @@ BiocManager::install("org.Mm.eg.db")
 ```R
 library(clusterProfiler)
 library(org.Mm.eg.db)
-library(Hmisc)
 ```
 
 
