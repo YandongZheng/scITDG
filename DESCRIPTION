@@ -18,8 +18,13 @@ Imports:
     dplyr,
     Hmisc,
     magrittr,
-    Matrix,
     Seurat,
     stringr,
     tibble,
-    VGAM
+    VGAM,
+    furrr,
+    unikn,
+    progress,
+    ComplexHeatmap,
+    RColorBrewer
+    
