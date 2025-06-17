@@ -72,7 +72,7 @@ CalculatescITDG <- function(object,
       return(result)
     },
     .options = furrr_options(
-      globals = c("ProcessscITDG", "estimateDispersionsForMatrix_V2",
+      globals = c("ProcessscITDG",
                   "p2p.deg.list", "object", "celltype.use",
                   "time.points.use", "time.points", "sample.ncell.use",
                   "GeneExpCur.wd", "tissue"),
