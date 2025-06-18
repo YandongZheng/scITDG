@@ -41,6 +41,7 @@ ProcessscITDG <- function(object,
   }
 
   # Define scITDGDataSet class--------------------------------------------------
+  if (!methods::isClass("scITDGDataSet")) {
   methods::setClass(
     "scITDGDataSet",
     contains = "ExpressionSet",
@@ -58,7 +59,8 @@ ProcessscITDG <- function(object,
       )
     )
   )
-
+}
+  
   # Create ITDG object
   ITDGds.raw <- tryCatch({
     scITDG::CreateITDGObject(
@@ -133,7 +135,7 @@ ProcessscITDG <- function(object,
     tissue, gsub(" ", ".", cal.celltype), rownames(exp_cur), sep = ":"
   )
 
-  # 保存表达曲线
+  # save expression curve
   exp_cur_file <- file.path(
     GeneExpCur.wd,
     paste0(gsub(" ", ".", cal.celltype), ".exp.cur.rds")
