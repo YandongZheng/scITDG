@@ -40,27 +40,24 @@ ProcessscITDG <- function(object,
     return(NULL)
   }
   
-  # Define scITDGDataSet class--------------------------------------------------
-  if (!methods::isClass("scITDGDataSet")) {
-    methods::setClass(
-      "scITDGDataSet",
-      contains = "ExpressionSet",
-      slots = c(
-        expressionFamily = "vglmff",
-        lowerDetectionLimit = "numeric",
-        dispFitInfo = "environment"
-      ),
-      prototype = prototype(
-        methods::new("VersionedBiobase",
-                     versions = c(
-                       classVersion("ExpressionSet"),
-                       scITDGDataSet = "1.0.0"
-                     )
-        )
+  # Define scITDGDataSet class-------------------------------------------------
+  methods::setClass(
+    "scITDGDataSet",
+    contains = "ExpressionSet",
+    slots = c(
+      expressionFamily = "vglmff",
+      lowerDetectionLimit = "numeric",
+      dispFitInfo = "environment"
+    ),
+    prototype = prototype(
+      methods::new("VersionedBiobase",
+                   versions = c(
+                     classVersion("ExpressionSet"),
+                     scITDGDataSet = "1.0.0"
+                   )
       )
     )
-  }
-  
+  ) 
   # Create ITDG object
   ITDGds.raw <- tryCatch({
     scITDG::CreateITDGObject(
@@ -144,4 +141,3 @@ ProcessscITDG <- function(object,
   saveRDS(exp_cur, exp_cur_file)
   return(exp_cur_file)
 }
-
