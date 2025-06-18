@@ -52,27 +52,6 @@ CalculatescITDG <- function(object,
     future::plan(future::multisession, workers = n.cores)
   }
   options(future.globals.maxSize = 5*1024^3)
-
-  # Define scITDGDataSet class--------------------------------------------------
-  if (!methods::isClass("scITDGDataSet")) {
-  methods::setClass(
-    "scITDGDataSet",
-    contains = "ExpressionSet",
-    slots = c(
-      expressionFamily = "vglmff",
-      lowerDetectionLimit = "numeric",
-      dispFitInfo = "environment"
-    ),
-    prototype = prototype(
-      methods::new("VersionedBiobase",
-                   versions = c(
-                     classVersion("ExpressionSet"),
-                     scITDGDataSet = "1.0.0"
-                   )
-      )
-    )
-  )
-}
   
   # Parallel analysis of all cell types-----------------------------------------
   exp_cur_files <- future_map(
