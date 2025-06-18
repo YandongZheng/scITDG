@@ -39,27 +39,6 @@ ProcessscITDG <- function(object,
                    ": Insufficient DEGs (n < 2)"))
     return(NULL)
   }
-
-  # Define scITDGDataSet class--------------------------------------------------
-  if (!methods::isClass("scITDGDataSet")) {
-  methods::setClass(
-    "scITDGDataSet",
-    contains = "ExpressionSet",
-    slots = c(
-      expressionFamily = "vglmff",
-      lowerDetectionLimit = "numeric",
-      dispFitInfo = "environment"
-    ),
-    prototype = prototype(
-      methods::new("VersionedBiobase",
-                   versions = c(
-                     classVersion("ExpressionSet"),
-                     scITDGDataSet = "1.0.0"
-                   )
-      )
-    )
-  )
-}
   
   # Create ITDG object
   ITDGds.raw <- tryCatch({
