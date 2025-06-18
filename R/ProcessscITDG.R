@@ -24,20 +24,41 @@ ProcessscITDG <- function(object,
                           sample.ncell.use,
                           seed.use,
                           GeneExpCur.wd) {
-
+  
   if (is.null(seed.use)) {
     seed.use = 176
   }
-
+  
   cell_degs <- p2p.deg.list %>%
     dplyr::filter(cell.type == cal.celltype) %>%
     dplyr::pull(gene) %>%
     unique()
-
+  
   if (length(cell_degs) < 2) {
     message(paste0("Skipping ", cal.celltype,
                    ": Insufficient DEGs (n < 2)"))
     return(NULL)
+  }
+  
+  # Define scITDGDataSet class--------------------------------------------------
+  if (!methods::isClass("scITDGDataSet")) {
+    methods::setClass(
+      "scITDGDataSet",
+      contains = "ExpressionSet",
+      slots = c(
+        expressionFamily = "vglmff",
+        lowerDetectionLimit = "numeric",
+        dispFitInfo = "environment"
+      ),
+      prototype = prototype(
+        methods::new("VersionedBiobase",
+                     versions = c(
+                       classVersion("ExpressionSet"),
+                       scITDGDataSet = "1.0.0"
+                     )
+        )
+      )
+    )
   }
   
   # Create ITDG object
@@ -57,12 +78,12 @@ ProcessscITDG <- function(object,
                    cal.celltype, ": ", e$message))
     return(NULL)
   })
-
+  
   if (is.null(ITDGds.raw)) {
     message(paste0("Skipping ", cal.celltype, ": ITDG object creation failed"))
     return(NULL)
   }
-
+  
   # Preprocessing
   ITDGds.raw <- scITDG::estimateSizeFactorsForMatrix(ITDGds.raw)
   ITDGds.raw <- tryCatch({
@@ -73,16 +94,16 @@ ProcessscITDG <- function(object,
       cal.celltype, ": ", e$message))
     return(NULL)
   })
-
+  
   if (is.null(ITDGds.raw) || length(cell_degs) < 2) {
     return(NULL)
   }
-
-
+  
+  
   # Subset-specific cell type data
   ITDGds <- ITDGds.raw[cell_degs, ] %>%
     scITDG::AddTimePointData()
-
+  
   # Generate new point-in-time data
   new.data <- data.frame(
     Time_num = seq(
@@ -91,7 +112,7 @@ ProcessscITDG <- function(object,
       length.out = ncol(ITDGds)
     )
   )
-
+  
   # Analytical expression curve
   exp_cur <- tryCatch({
     scITDG::getGeneExpCur(
@@ -105,21 +126,21 @@ ProcessscITDG <- function(object,
                    cal.celltype, ": ", e$message))
     return(NULL)
   })
-
+  
   if (is.null(exp_cur)) {
     return(NULL)
   }
-
+  
   rownames(exp_cur) <- paste(
     tissue, gsub(" ", ".", cal.celltype), rownames(exp_cur), sep = ":"
   )
-
+  
   # save expression curve
   exp_cur_file <- file.path(
     GeneExpCur.wd,
     paste0(gsub(" ", ".", cal.celltype), ".exp.cur.rds")
   )
-
+  
   saveRDS(exp_cur, exp_cur_file)
   return(exp_cur_file)
 }
