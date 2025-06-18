@@ -104,6 +104,25 @@ CreateITDGObject <- function(object,
   colnames(fd) <- "gene_short_name"
   rownames(fd) <- fd$gene_short_name
 
+    # Define scITDGDataSet class--------------------------------------------------
+  methods::setClass(
+    "scITDGDataSet",
+    contains = "ExpressionSet",
+    slots = c(
+      expressionFamily = "vglmff",
+      lowerDetectionLimit = "numeric",
+      dispFitInfo = "environment"
+    ),
+    prototype = prototype(
+      methods::new("VersionedBiobase",
+                   versions = c(
+                     classVersion("ExpressionSet"),
+                     scITDGDataSet = "1.0.0"
+                   )
+      )
+    )
+  )
+  
   ITDGds <- methods::new("scITDGDataSet",
                          exprs = as.matrix(mat.com, "sparseMatrix"),
                          phenoData = Biobase::AnnotatedDataFrame(data = meta.com),
