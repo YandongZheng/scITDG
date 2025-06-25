@@ -9,10 +9,14 @@
 #'
 #' @examples
 calVurveApply <- function(X, FUN, ...) {
-  parent <- environment(FUN)
-  e1 <- new.env(parent = parent)
-  multiassign(names(pData(X)), pData(X), envir = e1)
-  environment(FUN) <- e1
+  e <- new.env(parent = environment(FUN))
+  
+  pdata <- pData(X)
+  for(n in names(pdata)) {
+    assign(n, pdata[[n]], envir = e)
+  }
+  
+  environment(FUN) <- e
   res <- apply(X = exprs(X), MARGIN = 1, FUN, ...)
   names(res) <- row.names(X)
   res
