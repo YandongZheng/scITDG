@@ -13,8 +13,8 @@
 #' @examples
 getFitModel <- function(x, trend_formula, expressionFamily,
                         relative_expr, new_data, disp_func) {
-  environment(calFitModel) <- environment()
-  environment(responseMatrix) <- environment()
+  environment(calFitModel) <- parent.env(environment())
+  environment(responseMatrix) <- parent.env(environment())
   model_fits <- calFitModel(x, modelFormulaStr = trend_formula,
                             expressionFamily = expressionFamily,
                             relative_expr = relative_expr,
