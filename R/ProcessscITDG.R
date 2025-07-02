@@ -79,6 +79,23 @@ ProcessscITDG <- function(object,
     return(NULL)
   }
   
+  # Define scITDGDataSet class--------------------------------------------------
+  methods::setClass(
+    "scITDGDataSet",
+    contains = "ExpressionSet",
+    slots = c(
+      expressionFamily = "vglmff",
+      lowerDetectionLimit = "numeric"
+    ),
+    prototype = prototype(
+      methods::new("VersionedBiobase",
+                   versions = c(
+                     classVersion("ExpressionSet"),
+                     scITDGDataSet = "1.0.0"
+                   )
+      )
+    )
+  )
   
   # Subset-specific cell type data
   ITDGds <- ITDGds.raw[cell_degs, ] %>%
