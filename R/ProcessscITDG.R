@@ -87,6 +87,7 @@ ProcessscITDG <- function(object,
       expressionFamily = "vglmff",
       lowerDetectionLimit = "numeric",
       dispFitInfo = "environment"),
+    where = globalenv(),
     prototype = prototype(
       methods::new("VersionedBiobase",
                    versions = c(
@@ -95,7 +96,6 @@ ProcessscITDG <- function(object,
                    )
       )
     )
-    where = globalenv()
   )
   
   # Subset-specific cell type data
