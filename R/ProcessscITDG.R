@@ -85,7 +85,9 @@ ProcessscITDG <- function(object,
     contains = "ExpressionSet",
     slots = c(
       expressionFamily = "vglmff",
-      lowerDetectionLimit = "numeric"
+      lowerDetectionLimit = "numeric",
+      dispFitInfo = "environment",
+      where = globalenv()
     ),
     prototype = prototype(
       methods::new("VersionedBiobase",
