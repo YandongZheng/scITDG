@@ -40,24 +40,7 @@ ProcessscITDG <- function(object,
     return(NULL)
   }
   
-  # Define scITDGDataSet class-------------------------------------------------
-  methods::setClass(
-    "scITDGDataSet",
-    contains = "ExpressionSet",
-    slots = c(
-      expressionFamily = "vglmff",
-      lowerDetectionLimit = "numeric",
-      dispFitInfo = "environment"
-    ),
-    prototype = prototype(
-      methods::new("VersionedBiobase",
-                   versions = c(
-                     classVersion("ExpressionSet"),
-                     scITDGDataSet = "1.0.0"
-                   )
-      )
-    )
-  ) 
+
   # Create ITDG object
   ITDGds.raw <- tryCatch({
     scITDG::CreateITDGObject(
