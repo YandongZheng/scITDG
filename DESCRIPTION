@@ -25,7 +25,6 @@ Imports:
     furrr,
     unikn,
     progress,
-    ComplexHeatmap,
     RColorBrewer,
     Hmisc,
     cowplot,
