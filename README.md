@@ -24,10 +24,11 @@ scITDG has been tested with R version 4.0.0 and higher.
 
 ## Installation
 
-To install scITDG, first install the devtools and Seurat package, if it is not already installed: 
+To install scITDG, first install the devtools, BiocManager and Seurat package, if it is not already installed: 
 
 ```R
 install.packages("devtools")
+install.packages("BiocManager")
 install.packages("Seurat")
 ```
 
