@@ -25,10 +25,13 @@ Imports:
     furrr,
     unikn,
     progress,
-    ComplexHeatmap,
     RColorBrewer,
     Hmisc,
     cowplot,
     DOSE,
     data.table
+Suggests:
+    BiocManager
+Remotes:
+    bioc::ComplexHeatmap
     
