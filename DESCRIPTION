@@ -1,8 +1,8 @@
 Package: scITDG
 Title: A tool for identifying time-dependent genes in single-cell transcriptome sequencing data
-Version: 0.0.0.9000
+Version: 1.0.1
 Authors@R: 
-    person("Yandong", "Zheng", , "fzhengyandong_176@163.com", role = c("aut", "cre"),
+    person(given = "Yandong", family = "Zheng", email = "zhengyandong_176@163.com", role = c("aut", "cre"),
            comment = c(ResearchGate = "https://www.researchgate.net/profile/Yandong-Zheng-2?ev=hdr_xprf"))
 Description: scITDG is an R package for identifying time-dependent genes in single-cell sequencing data.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
@@ -11,7 +11,7 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Depends: 
-    R (>= 3.5.0)
+    R (>= 4.0.0)
 Imports: 
     Biobase,
     BiocGenerics,
@@ -26,5 +26,9 @@ Imports:
     unikn,
     progress,
     ComplexHeatmap,
-    RColorBrewer
+    RColorBrewer,
+    Hmisc,
+    cowplot,
+    DOSE,
+    data.table
     
