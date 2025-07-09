@@ -55,7 +55,7 @@ library(magrittr)
 
 ##### `Limb_Muscle_10000` has already been converted into a Seurat object.
 ```R
-load(Limb_Muscle_10000)
+data(Limb_Muscle_10000)
 tissue <- "Limb_Muscle"
 ```
 
