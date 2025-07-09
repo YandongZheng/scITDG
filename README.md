@@ -48,12 +48,15 @@ The demo data (Limb_Muscle_10000) is sourced from the Tabula Muris Senis open-ac
 ```R
 library(Seurat)
 library(scITDG)
+library(ComplexHeatmap)
+library(magrittr)
 ```
 #### Load Demo Data
 
 ##### `Limb_Muscle_10000` has already been converted into a Seurat object.
 ```R
 load(Limb_Muscle_10000)
+tissue <- "Limb_Muscle"
 ```
 
 
