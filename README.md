@@ -230,3 +230,21 @@ scITDGPlot(object = scitdg,
   <img src="https://github.com/YandongZheng/scITDG/raw/main/images/Limb_Muscle_scITDGPlot.png" alt="Description" width=100%;" />
 </p>
 
+
+#####  Display of Time-Dependent Genes Across Multiple Cell Types
+
+scITDG provides a concise visualization of time-dependent genes that frequently appear across various cell types, highlights their dynamic expressions in different modules.
+
+Explanation of Parameters:
+`k.num`: The number of clusters (patterns) to identify among the genes. This parameter controls how many distinct expression patterns will be shown in the heatmap (Default is 6).
+`show.trajectory`: Set to FALSE to hide trajectory information (Default is FALSE).
+`show.term`: Set to FALSE to disable enrichment analysis using clusterProfiler. When show.term = TRUE, the function will perform enrichment analysis on the identified gene clusters (Default is FALSE).
+
+`````R
+load(paste0(save.wd, "Limb_Muscle_scITDG_Cluster_GeneName.rdata"))
+`````
+
+<p align="center">
+  <img src="https://github.com/YandongZheng/scITDG/raw/main/images/Limb_Muscle_scITDG_Module5_HighFreq_Gene.png" alt="Description" width=80%;" />
+</p>
+
