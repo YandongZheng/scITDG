@@ -21,6 +21,7 @@ Imports:
     Seurat,
     stringr,
     tibble,
+    ggplot2,
     VGAM,
     furrr,
     unikn,
