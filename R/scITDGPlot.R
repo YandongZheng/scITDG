@@ -559,5 +559,5 @@ scITDGPlot <- function(object,
     draw(lgd, x = unit(0.99, "npc"), y = unit(0.5, "npc"), just = c("right")) # 1 npc为最右边
     dev.off()
   }
-  save(order.mat.df, file = paste0(save.wd, tissue, "_scITDG_Cluster_GeneName.rdata"))
+  saveRDS(order.mat.df, file = paste0(save.wd, tissue, "_scITDG_Cluster_GeneName.rds"))
 }
