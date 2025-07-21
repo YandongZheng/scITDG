@@ -88,9 +88,13 @@ celltype.list <- Limb_Muscle_10000@meta.data$cell_ontology_class %>% as.vector %
 We perform pairwise differential expression analysis using the Seurat package. The function `getP2PDEGs` is applied to each cell type in `celltype.list`. This function identifies differentially expressed genes between time points specified in `time.points`. The results are combined into a single data frame (`p2pdeg.com`) for further analysis.
 
 Explanation of Parameters:
+
 `celltype.use`: Specifies the column name in the Seurat object's meta.data that contains the cell type annotations.
+
 `celltype`: The specific cell type being processed in the current iteration. This is used to subset the analysis to the desired cell type.
+
 `time.points.use`: Specifies the column name in the Seurat object's meta.data that contains the time information.
+
 `time.points`: A vector of time points in ascending order, used to define the sequence of pairwise comparisons.
 
 ```R
@@ -128,16 +132,27 @@ saveRDS(object = p2pdeg.com, file = paste0(save.wd, "p2pdeg.com.rds"))
 ### 3. Create the scITDG Object and Perform the Main Calculation
 
 Explanation of Parameters:
+
 `object`: The Seurat object containing the single-cell data (Limb_Muscle_10000 in this case).
+
 `celltype.list`: A list of unique cell types to be processed, extracted from the Seurat object's meta.data.
+
 `logfc.threshold`: The log2 fold change threshold for identifying differentially expressed genes (Default is 0.5).
+
 `pvalue.threshold`: The p-value threshold for identifying differentially expressed genes (Default is 0.05).
+
 `p2p.deg.use`: The precomputed pairwise differentially expressed genes from the previous analysis (p2pdeg.com).
+
 `celltype.use`: The column name in the Seurat object's meta.data that contains cell type annotations (cell_ontology_class).
+
 `time.points.use`: The column name in the Seurat object's meta.data that contains time point annotations (Group).
+
 `time.points`: A vector of time points in ascending order, used to define the sequence of analyses.
+
 `sample.ncell.use`: The number of cells to sample for each cell type (Default is 200).
+
 `save.wd`: The working directory where results will be saved.
+
 `n.cores`: The number of CPU cores to use for parallel processing (Default is 1).
 
 
@@ -164,8 +179,11 @@ To display only the heatmap of gene expression patterns over time without additi
 
 
 Explanation of Parameters:
+
 `k.num`: The number of clusters (patterns) to identify among the genes. This parameter controls how many distinct expression patterns will be shown in the heatmap (Default is 6).
+
 `show.trajectory`: Set to FALSE to hide trajectory information (Default is FALSE).
+
 `show.term`: Set to FALSE to disable enrichment analysis using clusterProfiler. When show.term = TRUE, the function will perform enrichment analysis on the identified gene clusters (Default is FALSE).
 
 
