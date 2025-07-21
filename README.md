@@ -88,7 +88,6 @@ celltype.list <- Limb_Muscle_10000@meta.data$cell_ontology_class %>% as.vector %
 We perform pairwise differential expression analysis using the Seurat package. The function `getP2PDEGs` is applied to each cell type in `celltype.list`. This function identifies differentially expressed genes between time points specified in `time.points`. The results are combined into a single data frame (`p2pdeg.com`) for further analysis.
 
 Explanation of Parameters:
-
 `celltype.use`: Specifies the column name in the Seurat object's meta.data that contains the cell type annotations.
 `celltype`: The specific cell type being processed in the current iteration. This is used to subset the analysis to the desired cell type.
 `time.points.use`: Specifies the column name in the Seurat object's meta.data that contains the time information.
@@ -129,7 +128,6 @@ saveRDS(object = p2pdeg.com, file = paste0(save.wd, "p2pdeg.com.rds"))
 ### 3. Create the scITDG Object and Perform the Main Calculation
 
 Explanation of Parameters:
-
 `object`: The Seurat object containing the single-cell data (Limb_Muscle_10000 in this case).
 `celltype.list`: A list of unique cell types to be processed, extracted from the Seurat object's meta.data.
 `logfc.threshold`: The log2 fold change threshold for identifying differentially expressed genes (Default is 0.5).
@@ -166,7 +164,6 @@ To display only the heatmap of gene expression patterns over time without additi
 
 
 Explanation of Parameters:
-
 `k.num`: The number of clusters (patterns) to identify among the genes. This parameter controls how many distinct expression patterns will be shown in the heatmap (Default is 6).
 `show.trajectory`: Set to FALSE to hide trajectory information (Default is FALSE).
 `show.term`: Set to FALSE to disable enrichment analysis using clusterProfiler. When show.term = TRUE, the function will perform enrichment analysis on the identified gene clusters (Default is FALSE).
@@ -241,7 +238,6 @@ scITDGPlot(object = scitdg,
 scITDG provides a concise visualization of time-dependent genes that frequently appear across various cell types, highlights their dynamic expressions in different modules.
 
 Explanation of Parameters:
-
 `deg.list`: The "scITDG_Cluster_GeneName.rds" file generated after running the scITDGPlot function. This file stores the module clustering information of time-dependent expression genes associated with tissue-specific cell types.
 `moduleID`: The ID number corresponding to the module used for analysis.
 
