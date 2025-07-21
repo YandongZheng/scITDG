@@ -236,12 +236,12 @@ scITDGPlot(object = scitdg,
 scITDG provides a concise visualization of time-dependent genes that frequently appear across various cell types, highlights their dynamic expressions in different modules.
 
 Explanation of Parameters:
-`k.num`: The number of clusters (patterns) to identify among the genes. This parameter controls how many distinct expression patterns will be shown in the heatmap (Default is 6).
-`show.trajectory`: Set to FALSE to hide trajectory information (Default is FALSE).
-`show.term`: Set to FALSE to disable enrichment analysis using clusterProfiler. When show.term = TRUE, the function will perform enrichment analysis on the identified gene clusters (Default is FALSE).
+`deg.list`: The "scITDG_Cluster_GeneName.rds" file generated after running the scITDGPlot function. This file stores the module clustering information of time-dependent expression genes associated with tissue-specific cell types.
+`moduleID`: The ID number corresponding to the module used for analysis.
 
 `````R
-load(paste0(save.wd, "Limb_Muscle_scITDG_Cluster_GeneName.rdata"))
+limb_muscle_deg_list <- readRDS(paste0(save.wd, "Limb_Muscle_scITDG_Cluster_GeneName.rds"))
+HighFreqGene(deg.list = limb_muscle_deg_list, moduleID = 5)
 `````
 
 <p align="center">
