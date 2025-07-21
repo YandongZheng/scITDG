@@ -238,7 +238,9 @@ scITDGPlot(object = scitdg,
 scITDG provides a concise visualization of time-dependent genes that frequently appear across various cell types, highlights their dynamic expressions in different modules.
 
 Explanation of Parameters:
+
 `deg.list`: The "scITDG_Cluster_GeneName.rds" file generated after running the scITDGPlot function. This file stores the module clustering information of time-dependent expression genes associated with tissue-specific cell types.
+
 `moduleID`: The ID number corresponding to the module used for analysis.
 
 `````R
