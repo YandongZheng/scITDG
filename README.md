@@ -95,9 +95,9 @@ Limb_Muscle_10000@meta.data$Group %<>% factor(levels = time.points)
 celltype.list <- Limb_Muscle_10000@meta.data$cell_ontology_class %>% as.vector %>% unique
 ```
 
-### 2. Seurat was used for  Pairwise differential expression analysis with Seurat
+### 2. Pairwise differential expression analysis with Seurat
 
-#### Pairwise Differential Expression Analysis with Seurat
+#### Pairwise Differential Expression Analysis
 
 We perform pairwise differential expression analysis using the Seurat package. The function `getP2PDEGs` is applied to each cell type in `celltype.list`. This function identifies differentially expressed genes between time points specified in `time.points`. The results are combined into a single data frame (`p2pdeg.com`) for further analysis.
 
@@ -199,7 +199,6 @@ Explanation of Parameters:
 `show.trajectory`: Set to FALSE to hide trajectory information (Default is FALSE).
 
 `show.term`: Set to FALSE to disable enrichment analysis using clusterProfiler. When show.term = TRUE, the function will perform enrichment analysis on the identified gene clusters (Default is FALSE).
-
 
 ```R
 scITDGPlot(object = scitdg, 
