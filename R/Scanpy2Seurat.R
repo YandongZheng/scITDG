@@ -7,14 +7,10 @@
 #' @export
 #'
 #' @examples
-Scanpy2Seurat <- function(file.name, data.type) {
+Scanpy2Seurat <- function(file.name, data.type = "droplet") {
   if (is.null(x = file.name)) {
     stop("Please input file!")
   }
-  if (is.null(x = data.type)) {
-    stop("Please input data.type!")
-  }
-
   adata = scanpy$read_h5ad(file.name) 
 
   meta = adata$obs
