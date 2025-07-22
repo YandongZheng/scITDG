@@ -20,7 +20,7 @@ Furthermore, the versatility of scITDG makes it applicable to a wide range of bi
 
 In addition, the [Seurat](https://satijalab.org/seurat/), or [Scanpy](https://scanpy.readthedocs.io/) packages must be installed for scITDG to take Seurat / scanpy objects as input, respectively.
 
-scITDG has been tested with R version 4.0.0 and higher.
+scITDG has been tested with R version 4.4.3.
 
 ## Installation
 
