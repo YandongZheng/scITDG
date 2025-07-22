@@ -71,6 +71,7 @@ When your single-cell transcriptomic data is stored in the *h5ad* format (analyz
 ```R
 data(Limb_Muscle_10000)
 tissue <- "Limb_Muscle"
+save.wd <- "/scITDG/TabulaMurisSenis/Limb_Muscle/" # Your working path.
 ```
 
 
