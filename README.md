@@ -42,7 +42,7 @@ devtools::install_github("YandongZheng/scITDG")
 
 
 ### 1. Load Packages and Demo Data
-The demo data (Limb_Muscle_10000) is sourced from the Tabula Muris Senis open-access dataset, which includes mouse limb muscle datasets at 1 month, 3 months, 18 months, 21 months, 24 months, and 30 months. To conserve computational resources, we have sampled only 10,000 single cells for this demonstration. The scanpy object can be download [here](https://figshare.com/ndownloader/files/23873036).
+The demo data (Limb_Muscle_10000) is sourced from the Tabula Muris Senis open-access dataset, which includes mouse limb muscle datasets at 1 month, 3 months, 18 months, 21 months, 24 months, and 30 months. To conserve computational resources, we have sampled only 10,000 single cells for this demonstration.
 
 #### Load Packages
 ```R
@@ -51,6 +51,20 @@ library(scITDG)
 library(ComplexHeatmap)
 library(magrittr)
 ```
+
+When your single-cell transcriptomic data is stored in the *h5ad* format (analyzed using *Scanpy*), you can leverage the ***reticulate*** package in *R* to call the scanpy package from *Python*, and subsequently employ the ***Scanpy2Seurat*** function to convert the data from the *h5ad* format to the *Seurat V5*  format. The scanpy object can be download [here](https://figshare.com/ndownloader/files/23873036).
+
+```R
+# library(reticulate)
+# ## load python packages
+# scanpy <- import("scanpy")
+# pandas <- import("pandas")
+# 
+# scanpy.object <- "tabula-muris-senis-droplet-processed-official-annotations-Limb_Muscle.h5ad"
+# seurat.object <- Scanpy2Seurat(file.name = scanpy.object) 
+# saveRDS(object = seurat.object, file = "TabulaMurisSenis_Limb_Muscle_Scanpy2Seurat.rds")
+```
+
 #### Load Demo Data
 
 ##### `Limb_Muscle_10000` has already been converted into a Seurat object.
@@ -58,7 +72,6 @@ library(magrittr)
 data(Limb_Muscle_10000)
 tissue <- "Limb_Muscle"
 ```
-
 
 
 #### Preparation of Time Points and Cell Type List
@@ -251,7 +264,7 @@ scITDGPlot(object = scitdg,
 </p>
 
 
-#####  Display of Time-Dependent Genes Across Multiple Cell Types
+####  Display of Time-Dependent Genes Across Multiple Cell Types
 
 scITDG provides a concise visualization of time-dependent genes that frequently appear across various cell types, highlights their dynamic expressions in different modules.
 
