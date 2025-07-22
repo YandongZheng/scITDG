@@ -51,7 +51,7 @@ Scanpy2Seurat <- function(file.name, data.type = "droplet") {
   seurat.object[["RNA"]][["n_cells"]] <- adata$var["n_cells"]
 
   normal.data <- CreateAssayObject(counts = mtx.data, min.cells = 0, min.features = 0)
-  seurat.object@assays$RNA@data <- normal.data@data
+  seurat.object@assays$RNA$data <- normal.data@data
 
   # Add embedding
   embedding <- adata$obsm["X_umap"]
