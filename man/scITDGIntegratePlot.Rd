@@ -5,24 +5,22 @@
 \title{Title}
 \usage{
 scITDGIntegratePlot(
-  exp.cur,
-  row.dist = row.dist,
-  k.num = 15,
-  time.points = time.points,
-  sample.ncell.use = sample.ncell.use,
-  integrate.cluster.list = NULL,
+  object,
+  k.num = 6,
   cluster.order.list = NULL,
+  integrate.cluster.list = NULL,
   show.trajectory = TRUE,
   show.term = TRUE,
   OrgDb = org.Hs.eg.db,
   save.wd = NULL,
   use_raster = TRUE,
   plot.height = NULL,
-  heatmap.cols = NULL
+  heatmap.cols = NULL,
+  scale.adj = NULL
 )
 }
 \arguments{
-\item{heatmap.cols}{}
+\item{scale.adj}{}
 }
 \description{
 Title
