@@ -51,7 +51,7 @@ CalculatescITDG <- function(object,
   if (n.cores > 1) {
     future::plan(future::multisession, workers = n.cores)
   }
-  options(future.globals.maxSize = 5*1024^3)
+  options(future.globals.maxSize = 50*1024^3)
   
   # Parallel analysis of all cell types-----------------------------------------
   exp_cur_files <- future_map(
@@ -108,3 +108,4 @@ CalculatescITDG <- function(object,
     sample.ncell.use = sample.ncell.use
   ))
 }
+
