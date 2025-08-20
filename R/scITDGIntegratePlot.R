@@ -33,25 +33,6 @@ scITDGIntegratePlot <- function(object,
     save.wd <- "./"
   }
   
-  if (is.null(plot.height)) {
-    plot.height = 5 + (k.num - 4) * 0.75
-  }
-  
-  
-  if (is.null(scale.adj)) {
-    if (k.num == 2) { scale.adj = 0.2 }
-    if (k.num == 3) { scale.adj = 0.12 }
-    if (k.num == 4) { scale.adj = 0.091 }
-    if (k.num == 5) { scale.adj = 0.072 }
-    if (k.num == 6) { scale.adj = 0.06 }
-    if (k.num == 7) { scale.adj = 0.05 }
-    if (k.num == 8) { scale.adj = 0.04 }
-    if (k.num == 9) { scale.adj = 0.03 }
-    if (k.num == 10) { scale.adj = 0.01 }
-  } else {
-    scale.adj = 0.06
-  }
-  
   exp.cur = object$exp.cur
   object.gene = object$object.gene
   row.dist = object$row.dist
@@ -102,6 +83,23 @@ scITDGIntegratePlot <- function(object,
     save.type <- "Integrate"
   }
   
+  if (is.null(plot.height)) {
+    plot.height = 5 + (k.num - 4) * 0.75
+  }
+  
+  if (is.null(scale.adj)) {
+    if (k.num == 2) { scale.adj = 0.2 }
+    if (k.num == 3) { scale.adj = 0.12 }
+    if (k.num == 4) { scale.adj = 0.091 }
+    if (k.num == 5) { scale.adj = 0.072 }
+    if (k.num == 6) { scale.adj = 0.06 }
+    if (k.num == 7) { scale.adj = 0.05 }
+    if (k.num == 8) { scale.adj = 0.04 }
+    if (k.num == 9) { scale.adj = 0.03 }
+    if (k.num == 10) { scale.adj = 0.01 }
+  } else {
+    scale.adj = 0.06
+  }
   
   if (!is.null(cluster.order.list)) {
     order.mat.df$cluster %<>% as.vector %>% factor(levels = paste0("M", cluster.order.list))
@@ -132,7 +130,7 @@ scITDGIntegratePlot <- function(object,
   names(cluster.cols) <- paste0("M",seq_len(k.num))
   
   
-  # foo格式必须配合切片使用，row_split = annotation_row$cluster
+  # row_split = annotation_row$cluster
   module.anno = rowAnnotation(foo = anno_block(
     gp = gpar(fill = cluster.cols[levels(order.mat.df$cluster)], col = NA), # 这里注意填充顺序
     labels = levels(order.mat.df$cluster),
@@ -341,7 +339,6 @@ scITDGIntegratePlot <- function(object,
       
       plot.term.list <- list()
       for (i in 1:length(order.cluster)) {
-        # 显示进度条
         pb$tick()
         
         newgene <- subset(order.mat.df, cluster == order.cluster[i]) %>% .$gene %>% as.vector
@@ -592,3 +589,4 @@ scITDGIntegratePlot <- function(object,
   }
   saveRDS(order.mat.df, file = paste0(save.wd, tissue, "_scITDG_Cluster_GeneName", save.type, ".rds"))
 }
+
