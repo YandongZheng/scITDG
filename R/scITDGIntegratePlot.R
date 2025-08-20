@@ -63,7 +63,7 @@ scITDGIntegratePlot <- function(object,
       sel.cluster <- integrate.cluster.list[[i]]
       sel.gene <- subset(order.mat.df, cluster %in% paste0("M", sel.cluster)) %>% .$gene
       mat.sub <- mat[sel.gene, ] %>% as.matrix
-      row.dist.sub <- as.dist((1 - cor(Matrix::t(mat.sub)))/2)
+      row.dist.sub <- stats::as.dist((1 - cor(Matrix::t(mat.sub), method = "spearman")) / 2)
       row.dist.sub[is.na(row.dist.sub)] <- 1
       tree.row.sub = hclust(row.dist.sub, method = "ward.D2")
       mat.sub = mat.sub[tree.row.sub$order, , drop = FALSE]
@@ -589,4 +589,5 @@ scITDGIntegratePlot <- function(object,
   }
   saveRDS(order.mat.df, file = paste0(save.wd, tissue, "_scITDG_Cluster_GeneName", save.type, ".rds"))
 }
+
 
