@@ -375,7 +375,11 @@ scITDGIntegratePlot <- function(object,
                         qvalueCutoff = 0.2,
                         readable = TRUE) #Gene ID 转成gene Symbol ，易读
         
-        term.df <- fortify(ego, showCategory = 3) %>%
+        term.df <- fortify(ego, showCategory = 3)
+        if (nrow(term.df) == 0) {
+          term.df <- ego@result %>% head(n = 3)
+        }
+        term.df %<>%
           dplyr::select(Description, p.adjust) %>%
           dplyr::mutate(neg_LogP = -log10(p.adjust)) %>%
           dplyr::arrange(desc(neg_LogP))
@@ -384,7 +388,8 @@ scITDGIntegratePlot <- function(object,
         
         nchar.term <- nchar(term.df$Description)
         if (!max(nchar.term) > nchar.cut) {
-          term.df$Description[1] <- paste0(term.df$Description[1], paste(rep(" ", (nchar.cut - nchar.term[1])), collapse = ""))
+          term.df$Description[1] <- paste0(term.df$Description[1], 
+                                           paste(rep(" ", (nchar.cut - nchar.term[1])), collapse = ""))
         }
         term.df$Description %<>% capitalize %>% factor(., levels = rev(.))
         
@@ -489,7 +494,7 @@ scITDGIntegratePlot <- function(object,
       col.bar.subvp <- grid::viewport(x = 0.460, y = 0.018, width = 0.170, height = 0.06)
       print(anno.bar.col, vp = col.bar.subvp)
       
-      bar.text.subvp <- grid::viewport(x = 0.6, y = 0.015, width = 0.2, height = 0.06)
+      bar.text.subvp <- grid::viewport(x = 0.622, y = 0.015, width = 0.2, height = 0.06)
       print(plot.term.text, vp = bar.text.subvp)
       
       draw(lgd, x = unit(0.99, "npc"), y = unit(0.5, "npc"), just = c("right")) # 1 npc为最右边
@@ -589,5 +594,6 @@ scITDGIntegratePlot <- function(object,
   }
   saveRDS(order.mat.df, file = paste0(save.wd, tissue, "_scITDG_Cluster_GeneName", save.type, ".rds"))
 }
+
 
 
