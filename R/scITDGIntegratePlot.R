@@ -366,14 +366,14 @@ scITDGIntegratePlot <- function(object,
         )
         
         ego <- enrichGO(gene = gene.df$ENTREZID,
-                        universe = universe.df$ENTREZID, #背景基因集
-                        OrgDb = OrgDb, #没有organism="human"，改为OrgDb=org.Hs.eg.db
+                        universe = universe.df$ENTREZID, 
+                        OrgDb = OrgDb, 
                         #keyType = 'SYMBOL', # ENSEMBL
-                        ont = "BP", #也可以是 CC  BP  MF中的一种
+                        ont = "BP", 
                         pAdjustMethod = "BH", #矫正方式 holm”, “hochberg”, “hommel”, “bonferroni”, “BH”, “BY”, “fdr”, “none”中的一种
-                        pvalueCutoff = 0.05, #P值会过滤掉很多，可以全部输出
+                        pvalueCutoff = 0.05, 
                         qvalueCutoff = 0.2,
-                        readable = TRUE) #Gene ID 转成gene Symbol ，易读
+                        readable = TRUE) 
         
         term.df <- ego@result %>% head(n = 3) %>%
           dplyr::select(Description, p.adjust) %>%
@@ -590,6 +590,7 @@ scITDGIntegratePlot <- function(object,
   }
   saveRDS(order.mat.df, file = paste0(save.wd, tissue, "_scITDG_Cluster_GeneName", save.type, ".rds"))
 }
+
 
 
 
