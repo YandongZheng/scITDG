@@ -93,7 +93,7 @@ scITDGPlot <- function(object,
   }
 
   # time point color
-  time.cols = usecol(pal_seeblau, n = length(time.points))
+  time.cols = usecol(pal_seeblau, n = length(time.points)) %>% rev()
   names(time.cols) <- time.points
 
   # module color
@@ -552,7 +552,7 @@ scITDGPlot <- function(object,
       only_heatmap_name <- paste0(save.wd, tissue, "_scITDGPlot_NoTrajectory_NoTerm_NoOrder.pdf")
     }
 
-    pdf(only_heatmap_name, width = 4, height = 5, bg = "transparent")
+    pdf(only_heatmap_name, width = 4, height = plot.height, bg = "transparent")
     draw(heatmap.plot, padding = unit(c(8, 2, 2, 20), "mm")) ## see right heatmap in following 底部、左侧、顶部和右
     col.bar.subvp <- grid::viewport(x = 0.425, y = 0.018, width = 0.785, height = 0.06)
     print(anno.bar.col, vp = col.bar.subvp)
@@ -561,5 +561,6 @@ scITDGPlot <- function(object,
   }
   saveRDS(order.mat.df, file = paste0(save.wd, tissue, "_scITDG_Cluster_GeneName.rds"))
 }
+
 
 
