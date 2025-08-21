@@ -375,11 +375,7 @@ scITDGIntegratePlot <- function(object,
                         qvalueCutoff = 0.2,
                         readable = TRUE) #Gene ID 转成gene Symbol ，易读
         
-        term.df <- fortify(ego, showCategory = 3)
-        if (nrow(term.df) == 0) {
-          term.df <- ego@result %>% head(n = 3)
-        }
-        term.df %<>%
+        term.df <- ego@result %>% head(n = 3) %>%
           dplyr::select(Description, p.adjust) %>%
           dplyr::mutate(neg_LogP = -log10(p.adjust)) %>%
           dplyr::arrange(desc(neg_LogP))
@@ -594,6 +590,7 @@ scITDGIntegratePlot <- function(object,
   }
   saveRDS(order.mat.df, file = paste0(save.wd, tissue, "_scITDG_Cluster_GeneName", save.type, ".rds"))
 }
+
 
 
 
