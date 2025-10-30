@@ -1,7 +1,7 @@
 # scITDG
 
 ## A tool for identifying time-dependent genes in single-cell transcriptome sequencing data 
-`scITDG`, a tool designed for the analysis of time-dependent gene expression in single-cell transcriptomic sequencing data. scITDG stands out by its unique ability to identify dynamic gene expression patterns across various time points at single-cell resolution, which is pivotal for deciphering complex biological processes such as aging and tissue regeneration. The tool is fully compatible with widely used single-cell analysis platforms like Seurat and Scanpy. By integrating natural cubic splines regression with bootstrapping resampling, scITDG not only enhances the functionality of these platforms but also broadens their applicability.
+`scITDG`, a tool designed for the analysis of time-dependent gene expression in single-cell transcriptomic sequencing data. scITDG stands out by its unique ability to identify dynamic gene expression patterns across various time points at single-cell resolution, which is pivotal for deciphering complex biological processes such as aging and tissue regeneration. The tool is fully compatible with widely used single-cell analysis platforms like Seurat and Scanpy. By integrating natural cubic splines regression with bootstrapping resampling, scITDG not only enhances the functionality of these platforms but also broadens their applicability. scITDG is publised in https://doi.org/10.1007/s42995-025-00311-y.
 
 <p align="center">
   <img src="https://github.com/YandongZheng/scITDG/raw/main/images/scITDG_framework_overview.png" alt="Description" width=60%;" />
@@ -283,4 +283,10 @@ HighFreqGene(deg.list = limb_muscle_deg_list, moduleID = 5)
 <p align="center">
   <img src="https://github.com/YandongZheng/scITDG/raw/main/images/Limb_Muscle_scITDG_Module5_HighFreq_Gene.png" alt="Description" width=80%;" />
 </p>
+
+
+## Citations
+If you use scITDG in your research, please considering citing:
+Yandong Zheng, Chengyu Liu, Weiqi Zhang, Jing Qu, Shuai Ma, Guang-Hui Liu. scITDG: a tool for identifying time-dependent genes in single-cell transcriptome sequencing data. Mar Life Sci Technol (2025). https://doi.org/10.1007/s42995-025-00311-y
+
 
