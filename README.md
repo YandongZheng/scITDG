@@ -287,6 +287,7 @@ HighFreqGene(deg.list = limb_muscle_deg_list, moduleID = 5)
 
 ## Citations
 If you use scITDG in your research, please considering citing:
+
 Yandong Zheng, Chengyu Liu, Weiqi Zhang, Jing Qu, Shuai Ma, Guang-Hui Liu. scITDG: a tool for identifying time-dependent genes in single-cell transcriptome sequencing data. Mar Life Sci Technol (2025). https://doi.org/10.1007/s42995-025-00311-y
 
 
