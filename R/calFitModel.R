@@ -43,7 +43,7 @@ calFitModel <- function(x, modelFormulaStr, expressionFamily,
   }
   tryCatch({
     FM_fit <- VGAM::vglm(as.formula(modelFormulaStr),
-                         family = expressionFamily, epsilon = 1e-1)
+                         family = expressionFamily, epsilon = 1e-4)
     FM_fit
   }, error = function(e) {
     print(e);
@@ -78,3 +78,4 @@ calFitModel <- function(x, modelFormulaStr, expressionFamily,
     }
   })
 }
+
